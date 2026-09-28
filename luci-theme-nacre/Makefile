@@ -16,6 +16,10 @@ LUCI_DEPENDS:=+luci-base
 PKG_LICENSE:=Apache-2.0
 PKG_MAINTAINER:=Nanako0129
 
+# csstidy merges the three @font-face blocks into one (keeping only the last),
+# silently dropping two of the bundled fonts. Ship the CSS unminified.
+LUCI_MINIFY_CSS:=0
+
 define Package/luci-theme-nacre/postrm
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] || {

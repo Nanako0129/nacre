@@ -2,9 +2,12 @@
 'require baseclass';
 'require ui';
 
+// nacre sidebar menu. Tab and mode menus are unchanged from bootstrap; the main
+// menu renders into the sidebar as collapsible groups instead of a dropdown bar.
 return baseclass.extend({
 	__init__() {
 		ui.menu.load().then((tree) => this.render(tree));
+		this.bindDrawer();
 	},
 
 	render(tree) {
@@ -54,31 +57,44 @@ return baseclass.extend({
 		return ul;
 	},
 
-	renderMainMenu(tree, url, level) {
-		const ul = level ? E('ul', { 'class': 'dropdown-menu' }) : document.querySelector('#topmenu');
-		const children = ui.menu.getChildren(tree);
+	renderMainMenu(tree, url) {
+		const ul = document.querySelector('#topmenu');
 
-		if (children.length == 0 || level > 1)
-			return E([]);
+		ui.menu.getChildren(tree).forEach(group => {
+			const items = ui.menu.getChildren(group);
+			const groupUrl = url + '/' + group.name;
+			const inGroup = L.env.dispatchpath[1] == group.name;
 
-		children.forEach(child => {
-			const submenu = this.renderMainMenu(child, url + '/' + child.name, (level || 0) + 1);
-			const subclass = (!level && submenu.firstElementChild) ? 'dropdown' : '';
-			const linkclass = (!level && submenu.firstElementChild) ? 'menu' : '';
-			const linkurl = submenu.firstElementChild ? '#' : L.url(url, child.name);
+			if (!items.length) {
+				ul.appendChild(E('li', { 'class': 'nacre-leaf' + (inGroup ? ' active' : '') }, [
+					E('a', { 'href': L.url(groupUrl) }, [ _(group.title) ])
+				]));
+				return;
+			}
 
-			const li = E('li', { 'class': subclass }, [
-				E('a', { 'class': linkclass, 'href': linkurl }, [
-					_(child.title),
-				]),
-				submenu
-			]);
+			const list = E('ul', { 'class': 'nacre-group-items' }, items.map(item => {
+				const active = inGroup && L.env.dispatchpath[2] == item.name;
+				return E('li', { 'class': active ? 'active' : '' }, [
+					E('a', active ? { 'href': L.url(groupUrl, item.name), 'aria-current': 'page' }
+					              : { 'href': L.url(groupUrl, item.name) }, [ _(item.title) ])
+				]);
+			}));
 
-			ul.appendChild(li);
+			const title = E('button', {
+				'type': 'button',
+				'class': 'nacre-group-title',
+				'aria-expanded': inGroup ? 'true' : 'false',
+				'click': (ev) => {
+					const li = ev.currentTarget.parentNode;
+					const open = li.classList.toggle('open');
+					ev.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
+				}
+			}, [ E('span', {}, [ _(group.title) ]) ]);
+
+			ul.appendChild(E('li', { 'class': 'nacre-group' + (inGroup ? ' open' : '') }, [ title, list ]));
 		});
 
 		ul.style.display = '';
-
 		return ul;
 	},
 
@@ -101,5 +117,27 @@ return baseclass.extend({
 
 		if (ul.children.length > 1)
 			ul.style.display = '';
+	},
+
+	// Narrow screens: the sidebar is an off-canvas drawer.
+	bindDrawer() {
+		const toggle = document.querySelector('#nacre-menu-toggle');
+		const scrim = document.querySelector('#nacre-scrim');
+
+		if (!toggle || !scrim)
+			return;
+
+		const setOpen = (open) => {
+			document.body.classList.toggle('nacre-nav-open', open);
+			toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+			scrim.hidden = !open;
+		};
+
+		toggle.addEventListener('click', () => setOpen(!document.body.classList.contains('nacre-nav-open')));
+		scrim.addEventListener('click', () => setOpen(false));
+		document.addEventListener('keydown', (ev) => {
+			if (ev.key === 'Escape' && document.body.classList.contains('nacre-nav-open'))
+				setOpen(false);
+		});
 	}
 });

@@ -70,6 +70,15 @@ try {
 			report.pages[`${mode}/${name}`] = resp?.status();
 		}
 
+		const toggle = page.locator('#nacre-menu-toggle');
+		if (mode === 'mobile' && await toggle.isVisible()) {
+			await toggle.click();
+			await page.waitForTimeout(400);
+			await page.screenshot({ path: `${dir}/drawer.png` });
+			report[`${mode}/drawer_expanded`] = await toggle.getAttribute('aria-expanded');
+			await page.keyboard.press('Escape');
+		}
+
 		await page.goto(`${BASE}/admin/logout`, { waitUntil: 'networkidle' });
 		report[`${mode}/logout_back_to_login`] = (await page.locator('input[name="luci_password"]').count()) > 0;
 		report[`${mode}/console_errors`] = errors;

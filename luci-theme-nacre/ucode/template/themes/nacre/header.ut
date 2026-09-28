@@ -1,15 +1,19 @@
 {#
+ nacre — a LuCI theme. Derived from luci-theme-bootstrap:
  Copyright 2008 Steven Barth <steven@midlink.org>
  Copyright 2012 David Menting <david@nut-bolt.nl>
  Copyright 2008-2022 Jo-Philipp Wich <jo@mein.io>
+ Copyright 2026 Nanako0129
  Licensed to the public under the Apache License 2.0.
 -#}
 
 {%
 	import { getuid, getspnam } from 'luci.core';
+	import { cursor } from 'uci';
 
 	const boardinfo = ubus.call('system', 'board');
-	const darkpref = (theme == 'nacre-dark' ? 'true' : (theme == 'nacre-light' ? 'false' : null));
+	const mode = cursor().get('nacre', 'global', 'mode');
+	const darkpref = (mode == 'dark' ? 'true' : (mode == 'light' ? 'false' : null));
 
 	http.prepare_content('text/html; charset=UTF-8');
 -%}
@@ -33,53 +37,74 @@
 		<meta name="darkreader-lock">
 		<link rel="stylesheet" href="{{ media }}/cascade.css">
 		<link rel="stylesheet" media="only screen and (max-device-width: 854px)" href="{{ media }}/mobile.css" />
+		<link rel="stylesheet" href="{{ media }}/nacre.css">
 		<link rel="icon" href="{{ media }}/logo_48.png" sizes="48x48">
 		<link rel="icon" href="{{ media }}/logo.svg" sizes="any">
+		<link rel="apple-touch-icon" href="{{ media }}/apple-touch-icon.png">
 		{% if (node?.css): %}
 		<link rel="stylesheet" href="{{ resource }}/{{ node.css }}">
 		{% endif %}
 		{% if (css): %}
 		<style title="text/css">{{ css }}</style>
 		{% endif %}
+		{% if (!login_page): %}
 		<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
 		<script src="{{ resource }}/cbi.js"></script>
+		{% endif %}
 	</head>
 
-	<body class="lang_{{ dispatcher.lang }} {{ entityencode(striptags(node?.title ?? ''), true) }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
+	<body class="lang_{{ dispatcher.lang }} {{ entityencode(striptags(node?.title ?? ''), true) }} {{ blank_page ? 'nacre-blank' : 'nacre-app' }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
 		{% if (!blank_page): %}
-		<header>
-			<a class="brand" href="/">{{ striptags(boardinfo.hostname ?? '?') }}</a>
-			<ul class="nav" id="topmenu" style="display:none"></ul>
-			<div id="indicators" class="pull-right"></div>
-		</header>
+		<aside id="nacre-sidebar" aria-label="{{ _('Main menu') }}">
+			<a class="nacre-brand" href="/">
+				<img src="{{ media }}/logo.svg" alt="" width="36" height="36">
+				<span class="nacre-brand-text">
+					<span class="nacre-brand-host">{{ striptags(boardinfo.hostname ?? '?') }}</span>
+					<span class="nacre-brand-meta">{{ striptags(boardinfo.release?.version ?? '') }} · {{ striptags(boardinfo.release?.target ?? '') }}</span>
+				</span>
+			</a>
+			<nav>
+				<ul id="topmenu" style="display:none"></ul>
+			</nav>
+		</aside>
+		<div id="nacre-scrim" hidden></div>
 
-		<div id="maincontent" class="container">
-			{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
-				<div class="alert-message warning">
-					<h4>{{ _('No password set!') }}</h4>
-					<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
-					{% if (dispatcher.lookup("admin/system/admin")): %}
-					  <div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/admin") }}">{{ _('Go to password configuration...') }}</a></div>
-					{% endif %}
-				</div>
-			{% endif %}
+		<div id="nacre-main">
+			<div id="nacre-topbar">
+				<button type="button" id="nacre-menu-toggle" aria-controls="nacre-sidebar" aria-expanded="false" aria-label="{{ _('Toggle menu') }}">
+					<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+				</button>
+				<span class="nacre-topbar-host">{{ striptags(boardinfo.hostname ?? '?') }}</span>
+				<div id="indicators"></div>
+			</div>
 
-			{% if (boardinfo.rootfs_type == "initramfs"): %}
-				<div class="alert-message warning">
-					<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
-					<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
-					{% if (dispatcher.lookup("admin/system/flash")): %}
-					  <div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/flash") }}">{{ _('Go to firmware upgrade...') }}</a></div>
-					{% endif %}
-				</div>
-			{% endif %}
+			<div id="maincontent" class="container">
+				{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
+					<div class="alert-message warning">
+						<h4>{{ _('No password set!') }}</h4>
+						<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
+						{% if (dispatcher.lookup("admin/system/admin")): %}
+						  <div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/admin") }}">{{ _('Go to password configuration...') }}</a></div>
+						{% endif %}
+					</div>
+				{% endif %}
 
-			<noscript>
-				<div class="alert-message warning">
-					<h4>{{ _('JavaScript required!') }}</h4>
-					<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
-				</div>
-			</noscript>
+				{% if (boardinfo.rootfs_type == "initramfs"): %}
+					<div class="alert-message warning">
+						<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
+						<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
+						{% if (dispatcher.lookup("admin/system/flash")): %}
+						  <div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/flash") }}">{{ _('Go to firmware upgrade...') }}</a></div>
+						{% endif %}
+					</div>
+				{% endif %}
 
-			<div id="tabmenu" style="display:none"></div>
+				<noscript>
+					<div class="alert-message warning">
+						<h4>{{ _('JavaScript required!') }}</h4>
+						<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
+					</div>
+				</noscript>
+
+				<div id="tabmenu" style="display:none"></div>
 		{% endif %}

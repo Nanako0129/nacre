@@ -1,0 +1,593 @@
+/*
+ * nacre — a LuCI theme. Layer on top of the upstream bootstrap cascade.css:
+ * bootstrap's HSL variable system recolours every LuCI widget, this file
+ * supplies the morning-haze palette (from coralline), fonts and the sidebar
+ * layout. Copyright 2026 Nanako0129. Licensed under the Apache License 2.0.
+ */
+
+@font-face {
+	font-family: "Bricolage Grotesque";
+	src: url("fonts/bricolage-grotesque.woff2") format("woff2");
+	font-weight: 200 800;
+	font-display: swap;
+}
+@font-face {
+	font-family: "IBM Plex Sans";
+	src: url("fonts/ibm-plex-sans.woff2") format("woff2");
+	font-weight: 100 700;
+	font-display: swap;
+}
+@font-face {
+	font-family: "JetBrains Mono";
+	src: url("fonts/jetbrains-mono.woff2") format("woff2");
+	font-weight: 100 800;
+	font-display: swap;
+}
+
+/* ---------- palette ------------------------------------------------------
+ * morning-haze, verbatim from coralline's theme so the two read as siblings.
+ * Pastels carry ink text (coralline's pills); deep slates carry data.
+ */
+:root {
+	--nacre-sky: #A1B5D8;        /* sky serenade — primary pastel */
+	--nacre-sky-mist: #CCD9EC;
+	--nacre-lavender: #C4B7DC;
+	--nacre-sage: #C2D8B9;
+	--nacre-mint: #DCE9CF;
+	--nacre-sand: #E9CC97;
+	--nacre-terracotta: #EEB99F;
+	--nacre-sandstone: #F8E6D2;
+	--nacre-teal: #9EC3C0;
+	--nacre-rose: #DCC0D2;
+	--nacre-ink: #2A3142;        /* text on pastels, in both modes */
+	--nacre-slate: #2F3644;      /* dark data segments */
+	--nacre-slate-2: #2A303C;
+	--nacre-slate-3: #252A34;
+	--nacre-ok: #B7D6A6;
+	--nacre-warn: #EBC98E;
+	--nacre-hot: #E3968F;
+
+	/* surfaces (light) */
+	--nacre-page: #F6F2EC;
+	--nacre-side: #FBFAF7;
+	--nacre-line: #E6DFD6;
+	--nacre-nav-active: #CCD9EC;
+	--nacre-link: #4F6490;       /* 5.6:1 on white; the pastel sky is too light for text */
+	--nacre-muted: #5E6A84;      /* secondary text: 5.4:1 on the page; bootstrap's text-low is too faint here */
+
+	--nacre-radius: 12px;
+	--nacre-radius-lg: 16px;
+
+	/* bootstrap variable mapping */
+	--background-color-h: 40;
+	--background-color-s: 33%;
+	--background-color-l: 100%;
+	--text-color-h: 223;
+	--text-color-s: 22%;
+	--text-color-l: 21%;
+
+	--primary-color-high: #5B73A8;
+	--primary-color-medium: #4F669A;
+	--primary-color-low: #43598A;
+	--on-primary-color: #FFFFFF;
+
+	--error-color-high-rgb: 181, 70, 63;
+	--error-color-medium: #A23E38;
+	--error-color-low: #8F3631;
+
+	--success-color-high-rgb: 70, 125, 55;
+	--success-color-medium: #3E6F31;
+	--success-color-low: #36612B;
+
+	--warn-color-high: #EBC98E;
+	--warn-color-medium: #E9C07A;
+	--warn-color-low: #E6B566;
+	--on-warn-color: var(--nacre-ink);
+
+	--font-sans: "IBM Plex Sans", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+	--font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+	--font-display: "Bricolage Grotesque", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+}
+
+:root[data-darkmode="true"] {
+	--nacre-page: #1E232C;
+	--nacre-side: #252A34;
+	--nacre-line: #394152;
+	--nacre-nav-active: #A1B5D8;
+	--nacre-link: #A1B5D8;
+	--nacre-muted: #A3B0C8;
+
+	--background-color-h: 220;
+	--background-color-s: 18%;
+	--background-color-l: 17%;
+	--text-color-h: 219;
+	--text-color-s: 33%;
+	--text-color-l: 92%;
+
+	--primary-color-high: #A1B5D8;
+	--primary-color-medium: #8FA6CF;
+	--primary-color-low: #7D96C4;
+	--on-primary-color: var(--nacre-ink);
+
+	--error-color-high-rgb: 227, 150, 143;
+	--error-color-medium: #D9857E;
+	--error-color-low: #CE746D;
+	--on-error-color: var(--nacre-ink);
+
+	--success-color-high-rgb: 183, 214, 166;
+	--success-color-medium: #A8C98C;
+	--success-color-low: #99BD7C;
+	--on-success-color: var(--nacre-ink);
+}
+
+/* ---------- base ---------------------------------------------------------- */
+html, body {
+	background-color: var(--nacre-page);
+}
+
+body {
+	font-size: 14px;
+	line-height: 1.55;
+	padding: 0;
+}
+
+h1, h2, h3, legend {
+	font-family: var(--font-display);
+	letter-spacing: -0.01em;
+	color: var(--text-color-highest);
+}
+
+h2 { font-size: 26px; line-height: 1.25; margin: 4px 0 18px; }
+h3, legend { font-size: 17px; }
+
+a, footer a { color: var(--nacre-link); }
+a:hover { color: var(--text-color-highest); }
+
+code, pre, .ifacebadge, .zonebadge, [data-name="ipaddr"], .cbi-value-field code {
+	font-family: var(--font-mono);
+}
+
+/* ---------- app shell: sidebar + main ------------------------------------ */
+body.nacre-app {
+	display: block;
+	min-height: 100vh;
+}
+
+#nacre-sidebar {
+	position: fixed;
+	inset: 0 auto 0 0;
+	width: 248px;
+	box-sizing: border-box;
+	padding: 22px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+	overflow-y: auto;
+	background: var(--nacre-side);
+	border-right: 1px solid var(--nacre-line);
+	z-index: 900;
+}
+
+.nacre-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0 8px;
+	color: var(--text-color-highest);
+	text-decoration: none !important;
+}
+.nacre-brand img { flex-shrink: 0; border-radius: 9px; }
+.nacre-brand-text { display: flex; flex-direction: column; min-width: 0; }
+.nacre-brand-host {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 18px;
+	line-height: 1.2;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.nacre-brand-meta {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nacre-muted);
+}
+
+#topmenu {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+#topmenu li { list-style: none; margin: 0; }
+
+.nacre-group-title {
+	all: unset;
+	box-sizing: border-box;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--nacre-muted);
+	cursor: pointer;
+}
+.nacre-group-title::after {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg);
+	transition: transform 0.15s ease;
+}
+.nacre-group.open > .nacre-group-title::after { transform: rotate(45deg); }
+.nacre-group-title:hover { color: var(--text-color-highest); }
+.nacre-group-title:focus-visible { outline: 2px solid var(--nacre-sky); outline-offset: 1px; }
+
+.nacre-group-items {
+	display: none;
+	list-style: none;
+	margin: 0 0 6px;
+	padding: 0;
+}
+.nacre-group.open > .nacre-group-items { display: block; }
+
+.nacre-group-items a,
+.nacre-leaf > a {
+	display: block;
+	padding: 8px 12px;
+	border-radius: 10px;
+	font-size: 14px;
+	color: var(--text-color-high);
+	text-decoration: none !important;
+}
+.nacre-group-items a:hover,
+.nacre-leaf > a:hover { background: var(--background-color-low); color: var(--text-color-highest); }
+.nacre-group-items li.active > a,
+.nacre-leaf.active > a {
+	background: var(--nacre-nav-active);
+	color: var(--nacre-ink);
+	font-weight: 600;
+}
+
+#nacre-main {
+	margin-left: 248px;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+#nacre-topbar {
+	position: sticky;
+	top: 0;
+	z-index: 800;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 52px;
+	padding: 8px 32px;
+	box-sizing: border-box;
+	background: color-mix(in srgb, var(--nacre-page) 88%, transparent);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+#nacre-menu-toggle { display: none; }
+.nacre-topbar-host { display: none; }
+
+/* LuCI status indicators (Refreshing, Unsaved changes…) as coralline pills */
+#indicators {
+	margin-left: auto;
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+#indicators > span {
+	padding: 4px 12px;
+	border-radius: 999px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	background: var(--nacre-sky);
+	color: var(--nacre-ink);
+	cursor: pointer;
+}
+#indicators > span[data-style="inactive"] { background: var(--nacre-slate); color: #BECCE4; }
+
+#maincontent.container {
+	max-width: 1180px;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 8px 32px 32px;
+	margin: 0 auto;
+	flex: 1 0 auto;
+}
+
+#nacre-footer {
+	padding: 16px 32px 20px;
+	margin-top: 0;
+	border-top: 1px solid var(--nacre-line);
+	font-size: 12px;
+	color: var(--nacre-muted);
+}
+
+/* ---------- widgets -------------------------------------------------------- */
+.cbi-section, .cbi-map > fieldset, .cbi-section-node {
+	border-radius: var(--nacre-radius-lg);
+}
+
+.cbi-map > .cbi-section,
+.cbi-map > div > .cbi-section,
+#view > .cbi-section,
+#view > div > .cbi-section {
+	background: var(--background-color-high);
+	border: 1px solid var(--nacre-line);
+	padding: 18px 22px;
+	margin-bottom: 20px;
+}
+
+.btn, .cbi-button, input[type=button], input[type=reset], input[type=submit] {
+	border-radius: 10px;
+	font-family: var(--font-sans);
+	font-weight: 500;
+}
+
+/* Primary / positive / negative actions become coralline pastel pills with ink.
+ * bootstrap colours button text through --on-color and uses two-class selectors
+ * (.cbi-section-actions .cbi-button-edit), so match both. */
+.btn.primary,
+.cbi-button-apply,
+.cbi-button-edit,
+.cbi-button-action.important,
+.cbi-page-actions .cbi-button-apply,
+.cbi-section-actions .cbi-button-edit {
+	--on-color: var(--nacre-ink);
+	background: var(--nacre-sky);
+	border-color: var(--nacre-sky);
+}
+.cbi-button-positive.important,
+.cbi-page-actions .cbi-button-save {
+	--on-color: var(--nacre-ink);
+	background: var(--nacre-sage);
+	border-color: var(--nacre-sage);
+}
+.cbi-button-negative.important,
+.cbi-section-remove .cbi-button,
+.cbi-button-remove {
+	--on-color: var(--nacre-ink);
+	background: var(--nacre-terracotta);
+	border-color: var(--nacre-terracotta);
+}
+
+input:not([type=checkbox]):not([type=radio]), select, textarea, .cbi-dropdown, .cbi-input-text {
+	border-radius: 10px;
+}
+
+.item:hover::after,
+.btn:hover, .btn:focus,
+.cbi-button:hover, .cbi-button:focus,
+.cbi-select.focus,
+.cbi-dropdown:focus, .cbi-dropdown[open],
+.cbi-dynlist > .item:focus,
+input[type="checkbox"]:focus::before,
+input[type="radio"]:focus::before,
+input:focus, button:hover, textarea:focus, select:focus {
+	--focus-color-rgb: 91, 115, 168;
+}
+
+/* Tabs: a segmented pill bar instead of bootstrap's folder tabs */
+.tabs, .cbi-tabmenu {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 4px;
+	margin: 0 0 18px;
+	border: 1px solid var(--nacre-line);
+	border-radius: 12px;
+	background: var(--background-color-high);
+	background-image: none;
+}
+.tabs > li, .cbi-tabmenu > li,
+.tabs > li:not(.active), .cbi-tabmenu > .cbi-tab-disabled {
+	margin: 0;
+	max-width: none;
+	border: none;
+	background: none;
+}
+.tabs > li > a, .cbi-tabmenu > li > a {
+	display: block;
+	padding: 6px 14px;
+	border: none;
+	border-radius: 9px;
+	background: none;
+	color: var(--nacre-muted);
+	font-weight: 500;
+	text-decoration: none;
+	white-space: nowrap;
+	text-overflow: clip;
+}
+.tabs > li:not(.active) > a:hover, .cbi-tabmenu > .cbi-tab-disabled > a:hover {
+	background: var(--background-color-low);
+	color: var(--text-color-highest);
+}
+.tabs > li.active > a, .cbi-tabmenu > li.cbi-tab > a {
+	background: var(--nacre-sky);
+	color: var(--nacre-ink);
+	font-weight: 600;
+}
+
+/* Checkboxes / radios: bootstrap's border is near-invisible on the warm page */
+input[type="checkbox"], input[type="radio"] { --bd-color: var(--nacre-muted); }
+
+.cbi-button-edit {
+	background: var(--nacre-sky);
+	border-color: var(--nacre-sky);
+	color: var(--nacre-ink);
+}
+
+.alert-message { border-radius: var(--nacre-radius); }
+.modal { border-radius: var(--nacre-radius-lg); }
+
+/* Progress bars read like coralline's dark gauge segments */
+.cbi-progressbar {
+	border-radius: 999px;
+	background: var(--nacre-slate);
+	border-color: var(--nacre-slate);
+	/* no overflow:hidden — the value label is a ::before drawn above the bar */
+}
+.cbi-progressbar > div { background: var(--nacre-ok); border-radius: 999px; }
+.cbi-progressbar::before { font-family: var(--font-mono); font-size: 12px; color: var(--text-color-medium); }
+
+/* ---------- login ----------------------------------------------------------- */
+body.nacre-blank { display: block; }
+
+#nacre-login {
+	position: relative;
+	min-height: 100vh;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	padding: 48px clamp(20px, 8vw, 120px);
+	box-sizing: border-box;
+	background: var(--nacre-page);
+}
+
+.nacre-strata {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+.nacre-strata .s1 { fill: var(--nacre-sky-mist); }
+.nacre-strata .s2 { fill: var(--nacre-sky); }
+.nacre-strata .s3 { fill: var(--nacre-lavender); }
+.nacre-strata .s4 { fill: var(--nacre-sage); }
+.nacre-strata .s5 { fill: var(--nacre-sand); }
+.nacre-strata .s6 { fill: var(--nacre-terracotta); }
+:root[data-darkmode="true"] .nacre-strata { opacity: 0.55; }
+
+.nacre-login-card {
+	position: relative;
+	width: min(400px, 100%);
+	box-sizing: border-box;
+	padding: 36px 36px 32px;
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+	border-radius: 20px;
+	border: 1px solid rgba(42, 49, 66, 0.08);
+	background: color-mix(in srgb, var(--nacre-side) var(--nacre-login-alpha, 80%), transparent);
+	backdrop-filter: blur(var(--nacre-login-blur, 14px));
+	-webkit-backdrop-filter: blur(var(--nacre-login-blur, 14px));
+	box-shadow: 0 24px 60px -30px rgba(42, 49, 66, 0.35);
+}
+
+.nacre-login-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 24px;
+	color: var(--text-color-highest);
+}
+.nacre-login-brand img { border-radius: 13px; }
+
+.nacre-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.nacre-pill {
+	padding: 4px 12px;
+	border-radius: 999px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--nacre-ink);
+}
+.nacre-pill.sky { background: var(--nacre-sky); }
+.nacre-pill.sage { background: var(--nacre-sage); }
+
+.nacre-login-card h1 {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 30px;
+	line-height: 1.15;
+	color: var(--text-color-highest);
+}
+
+.nacre-login-form { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.nacre-login-form label { font-size: 13px; font-weight: 500; color: var(--nacre-muted); margin-top: 8px; }
+.nacre-login-form input {
+	height: 44px;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0 14px;
+	font-size: 15px;
+	background: var(--background-color-high);
+}
+.nacre-login-form input[type=text] { font-family: var(--font-mono); }
+.nacre-login-submit {
+	margin-top: 18px;
+	height: 48px;
+	border: none;
+	border-radius: 12px;
+	background: var(--nacre-ink);
+	color: var(--nacre-sandstone);
+	font-family: var(--font-sans);
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+}
+:root[data-darkmode="true"] .nacre-login-submit { background: var(--nacre-sky); color: var(--nacre-ink); }
+.nacre-login-submit:hover { filter: brightness(1.08); }
+
+/* ---------- narrow screens: sidebar becomes a drawer ------------------------ */
+@media (max-width: 900px) {
+	#nacre-sidebar {
+		transform: translateX(-100%);
+		transition: transform 0.2s ease;
+		box-shadow: none;
+	}
+	body.nacre-nav-open #nacre-sidebar {
+		transform: none;
+		box-shadow: 0 0 40px rgba(0, 0, 0, 0.25);
+	}
+	#nacre-scrim:not([hidden]) {
+		position: fixed;
+		inset: 0;
+		background: rgba(30, 35, 44, 0.4);
+		z-index: 850;
+	}
+	#nacre-main { margin-left: 0; }
+	#nacre-topbar { padding: 8px 16px; }
+	#nacre-menu-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		padding: 0;
+		border: 1px solid var(--nacre-line);
+		border-radius: 10px;
+		background: var(--background-color-high);
+		color: var(--text-color-highest);
+	}
+	.nacre-topbar-host {
+		display: block;
+		color: var(--text-color-highest);
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 17px;
+	}
+	#maincontent.container { padding: 8px 16px 24px; }
+	#nacre-footer { padding: 16px; }
+	.nacre-login-card { padding: 28px 22px 24px; }
+}
