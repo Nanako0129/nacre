@@ -4,7 +4,10 @@
 
 [English](./README.md)
 
-<!-- 主視覺：從示範路由器截圖，絕不使用正式環境的畫面 -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/overview-dark.png">
+  <img alt="nacre 總覽頁：狀態列與 WAN 流量圖" src="assets/screenshots/overview-light.png">
+</picture>
 
 ## 你會得到什麼
 
@@ -17,6 +20,11 @@
 | **字型** | 內建 Bricolage Grotesque、IBM Plex Sans、JetBrains Mono（OFL 授權），路由器不用連網也能正常顯示。中文使用系統字型。 |
 
 nacre 建立在上游 bootstrap 主題的變數系統之上，所以 LuCI 的每一頁和每個外掛都會套到樣式。nacre 只在上面加了配色、字型和版面。
+
+| | |
+|---|---|
+| ![登入頁（淺色）](assets/screenshots/login-light.png) | ![登入頁（深色）](assets/screenshots/login-dark.png) |
+| ![nacre 設定頁](assets/screenshots/settings.png) | ![防火牆區域](assets/screenshots/firewall.png) |
 
 ## 需求
 

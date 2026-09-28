@@ -4,7 +4,10 @@
 
 [繁體中文說明](./README.zh-TW.md)
 
-<!-- hero: rendered from a demo router, never from a production one -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/overview-dark.png">
+  <img alt="nacre overview page with the status line and WAN traffic chart" src="assets/screenshots/overview-light.png">
+</picture>
 
 ## What you get
 
@@ -17,6 +20,11 @@
 | **Fonts** | Bricolage Grotesque, IBM Plex Sans and JetBrains Mono are bundled (OFL), so the router needs no internet access to render them. CJK text uses the system font. |
 
 Everything is built on the upstream bootstrap theme's variable system, so every LuCI page and app is styled — nacre only adds the palette, fonts and layout on top.
+
+| | |
+|---|---|
+| ![Login page, light](assets/screenshots/login-light.png) | ![Login page, dark](assets/screenshots/login-dark.png) |
+| ![nacre settings](assets/screenshots/settings.png) | ![Firewall zones](assets/screenshots/firewall.png) |
 
 ## Requirements
 
