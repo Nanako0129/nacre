@@ -99,7 +99,10 @@ else
 		|| die "luci-theme-nacre not found in $FEED (apk update failed?)"
 	i18n="$(apk search luci-i18n-nacre 2>/dev/null | sed 's/-[0-9].*//' | sort -u | tr '\n' ' ')"
 	say "installing $PKGS $i18n"
-	apk add $PKGS $i18n
+	# add installs what is missing but never upgrades; add --upgrade would also
+	# upgrade every dependency (luci-base, rpcd…). upgrade <names> touches only
+	# the named packages (apk-tools 3.0.5, measured with -s).
+	apk add $PKGS $i18n && apk upgrade $PKGS $i18n
 fi
 
 current="$(uci -q get luci.main.mediaurlbase || echo '?')"
