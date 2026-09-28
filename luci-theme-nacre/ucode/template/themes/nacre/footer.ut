@@ -19,6 +19,9 @@
 			</footer>
 		</div>
 		<script>L.require('menu-nacre')</script>
+		{% if (join('/', ctx.path) == 'admin/status/overview'): %}
+		<script>L.require('nacre-statusline')</script>
+		{% endif %}
 		{% endif %}
 	</body>
 </html>

@@ -304,6 +304,35 @@ body.nacre-app {
 }
 #indicators > span[data-style="inactive"] { background: var(--nacre-slate); color: #BECCE4; }
 
+/* coralline status line (overview page): a powerline-style pill run */
+#nacre-statusline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	font-weight: 500;
+	min-width: 0;
+}
+.nacre-seg {
+	padding: 5px 11px;
+	border-radius: 4px;
+	color: var(--nacre-ink);
+	white-space: nowrap;
+}
+.nacre-seg:first-child { border-radius: 999px 4px 4px 999px; }
+.nacre-seg:last-child { border-radius: 4px 999px 999px 4px; }
+.nacre-seg.sky { background: var(--nacre-sky); }
+.nacre-seg.sage { background: var(--nacre-sage); }
+.nacre-seg.lavender { background: var(--nacre-lavender); }
+.nacre-seg.terracotta { background: var(--nacre-terracotta); }
+.nacre-seg.sandstone { background: var(--nacre-sandstone); }
+.nacre-seg.hot:not(.data) { background: var(--nacre-hot); }
+.nacre-seg.data { background: var(--nacre-slate); color: #BECCE4; }
+.nacre-seg.data.ok { color: var(--nacre-ok); }
+.nacre-seg.data.warn { color: var(--nacre-warn); }
+.nacre-seg.data.hot { color: var(--nacre-hot); }
+
 #maincontent.container {
 	max-width: 1180px;
 	width: 100%;
@@ -567,7 +596,8 @@ body.nacre-blank { display: block; }
 		z-index: 850;
 	}
 	#nacre-main { margin-left: 0; }
-	#nacre-topbar { padding: 8px 16px; }
+	#nacre-topbar { padding: 8px 16px; flex-wrap: wrap; }
+	#nacre-statusline { order: 3; width: 100%; }
 	#nacre-menu-toggle {
 		display: inline-flex;
 		align-items: center;
