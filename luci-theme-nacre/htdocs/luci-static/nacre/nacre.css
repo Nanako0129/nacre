@@ -357,6 +357,16 @@ body.nacre-app {
 .nacre-traffic-legend .tx { color: var(--nacre-terracotta); }
 .nacre-traffic-legend small { color: #98A6C0; font-size: 11px; }
 #nacre-traffic svg { display: block; width: 100%; height: 180px; }
+.nacre-traffic-plot { position: relative; }
+.nacre-traffic-axis span {
+	position: absolute;
+	left: 2px;
+	transform: translateY(-110%);
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: #6F7C94;
+	pointer-events: none;
+}
 #nacre-traffic path { vector-effect: non-scaling-stroke; fill: none; }
 #nacre-traffic path.grid { stroke: #394152; stroke-width: 1; }
 #nacre-traffic path.rx { stroke: #8FB8D6; stroke-width: 2; }

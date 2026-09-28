@@ -4,11 +4,11 @@
 'require fs';
 'require uci';
 
-// coralline-style status line for the overview page. Uses only calls that
-// LuCI's own status pages already hold ACLs for (no new rpcd grants):
-// system board/info and conntrack files (luci-mod-status-index),
+// coralline-style status line and WAN traffic chart for the overview page.
+// Uses only calls LuCI's own status pages already hold ACLs for (no new rpcd
+// grants): system board/info and conntrack files (luci-mod-status-index),
 // network.interface dump and luci-rpc getNetworkDevices (luci-base),
-// luci getRealtimeStats (luci-mod-status-realtime) to seed the traffic chart.
+// luci getRealtimeStats (luci-mod-status-realtime).
 
 const callBoard = rpc.declare({ object: 'system', method: 'board' });
 const callInfo = rpc.declare({ object: 'system', method: 'info' });
@@ -18,12 +18,15 @@ const callRealtime = rpc.declare({ object: 'luci', method: 'getRealtimeStats', p
 
 const POLL_MS = 1000;
 
-// Traffic chart: a rolling window of per-second WAN rates. Longer history would
-// need vnstat/collectd data and a new ACL, so the window is what the page holds.
+// Traffic comes from luci-bwc (via getRealtimeStats): the router samples each
+// device every second with its own clock and keeps the last 60 samples, so
+// browser request jitter can't open gaps and a few missed polls are refilled.
+// Longer history would need vnstat/collectd and a new ACL.
 const WINDOW_S = 300;
+const GAP_S = 3;            /* bins further apart than this are drawn as separate runs */
 const CHART_W = 640, CHART_H = 180;
-const FLOOR_BPS = 1e6 / 8; /* keep the y axis at >= 1 Mbps so idle noise stays flat */
-const GAP_S = 3; /* samples further apart than this are drawn as separate runs */
+const MIN_TOP_MBPS = 10;    /* log axis spans at least 0–10 Mbps */
+const GRID_MBPS = [ 1, 10, 100, 1000, 10000 ];
 
 // gauge colour thresholds, as coralline's VL_WARN_PCT / VL_HOT_PCT
 const WARN = 50, HOT = 75;
@@ -33,8 +36,7 @@ function level(pct) {
 }
 
 // WAN = interfaces named in uci nacre.global.wan, or else every interface that
-// holds an IPv4 default route (what LuCI's own overview does). Names never
-// matter in auto mode, and a second uplink is picked up by itself.
+// holds an IPv4 default route (what LuCI's own overview does).
 function wanSet(ifaces, pinned) {
 	if (pinned.length)
 		return pinned.map(name => ifaces.find(i => i.interface == name) ?? { interface: name, up: false });
@@ -42,9 +44,18 @@ function wanSet(ifaces, pinned) {
 	return ifaces.filter(i => (i.route ?? []).some(r => r.target == '0.0.0.0' && r.mask == 0));
 }
 
+function toMbps(bytesPerSec) {
+	return bytesPerSec * 8 / 1e6;
+}
+
 function mbps(bytesPerSec) {
-	const v = bytesPerSec * 8 / 1e6;
+	const v = toMbps(bytesPerSec);
 	return v >= 100 ? v.toFixed(0) : v.toFixed(1);
+}
+
+// Log axis: a single spike must not flatten everyday traffic to the baseline.
+function logY(m, topM) {
+	return Math.log10(1 + Math.max(0, m)) / Math.log10(1 + topM);
 }
 
 return baseclass.extend({
@@ -55,9 +66,12 @@ return baseclass.extend({
 
 		this.el = E('div', { 'id': 'nacre-statusline', 'role': 'status', 'aria-label': _('Status line') });
 		host.insertBefore(this.el, document.querySelector('#indicators'));
+
+		this.series = {};        /* device -> Map(t -> { rx, tx }) in bytes/s, from luci-bwc */
+		this.since = {};         /* device -> earliest luci-bwc timestamp this page accepts */
+		this.fallback = [];      /* browser-side deltas, only when luci-bwc is unavailable */
 		this.prev = null;
-		this.samples = [];
-		this.seeded = false;
+		this.busy = false;
 		this.board = callBoard();
 		this.pinned = [];
 		L.resolveDefault(uci.load('nacre'), null).then(() => {
@@ -72,6 +86,13 @@ return baseclass.extend({
 	},
 
 	update() {
+		// One request set at a time: overlapping replies used to arrive out of
+		// order and drop samples.
+		if (this.busy)
+			return Promise.resolve();
+
+		this.busy = true;
+
 		return Promise.all([
 			this.board,
 			callInfo(),
@@ -80,10 +101,111 @@ return baseclass.extend({
 			L.resolveDefault(fs.read('/proc/sys/net/netfilter/nf_conntrack_count'), null),
 			L.resolveDefault(fs.read('/proc/sys/net/netfilter/nf_conntrack_max'), null)
 		]).then(([board, info, ifaces, devices, ctCount, ctMax]) => {
-			this.render(this.segments(board, info, ifaces, devices, ctCount, ctMax));
-			this.seed(ifaces);
-			this.drawChart();
-		}).catch(() => {});
+			const devs = this.uplinkDevices(ifaces);
+
+			return Promise.all(devs.map(d => L.resolveDefault(callRealtime('interface', d), null))).then(replies => {
+				this.merge(devs, replies, devices);
+				this.render(this.segments(board, info, ifaces, devices, ctCount, ctMax));
+				this.drawChart();
+			});
+		}).catch(() => {}).finally(() => { this.busy = false; });
+	},
+
+	uplinkDevices(ifaces) {
+		return [...new Set(wanSet(ifaces, this.pinned ?? []).map(w => w.l3_device).filter(d => d))];
+	},
+
+	// Fold luci-bwc rows ([t, rx_bytes, rx_pkts, tx_bytes, tx_pkts], cumulative)
+	// into per-second rates keyed by the router's timestamp.
+	merge(devs, replies, devices) {
+		const since = Date.now() / 1000 - WINDOW_S - 60;
+		let any = false;
+
+		devs.forEach((dev, n) => {
+			const rows = replies[n];
+
+			if (!Array.isArray(rows) || rows.length < 2)
+				return;
+
+			any = true;
+			const first = !this.series[dev];
+			const map = this.series[dev] ?? (this.series[dev] = new Map());
+
+			for (let i = 1; i < rows.length; i++) {
+				const [t0, rx0, , tx0] = rows[i - 1], [t1, rx1, , tx1] = rows[i];
+
+				if (t1 > t0 && t1 - t0 <= GAP_S && rx1 >= rx0 && tx1 >= tx0 && t1 >= (this.since[dev] ?? 0))
+					map.set(t1, { rx: (rx1 - rx0) / (t1 - t0), tx: (tx1 - tx0) / (t1 - t0) });
+			}
+
+			// On the page's first read, luci-bwc's buffer can hold fragments left
+			// by earlier visitors (it samples only while polled). Keep just the
+			// run that reaches the present; from here on polling keeps it whole.
+			if (first) {
+				const t = [...map.keys()].sort((a, b) => a - b);
+				let start = t[0];
+				for (let i = 1; i < t.length; i++)
+					if (t[i] - t[i - 1] > GAP_S)
+						start = t[i];
+				// ...and only if that run is current: luci-bwc exits ~10 s after
+				// its last poll, so its buffer can be entirely stale.
+				const stale = !t.length || Date.now() / 1000 - t[t.length - 1] > GAP_S * 2;
+				for (const k of t)
+					if (stale || k < start)
+						map.delete(k);
+
+				// Every later read returns the whole 60-entry buffer again; without
+				// this floor the trimmed fragments would be merged straight back.
+				this.since[dev] = stale ? Date.now() / 1000 - GAP_S : start;
+			}
+
+			for (const t of map.keys())
+				if (t < since)
+					map.delete(t);
+		});
+
+		Object.keys(this.series).forEach(d => { if (!devs.includes(d)) { delete this.series[d]; delete this.since[d]; } });
+		this.useFallback = !any;
+
+		if (!any)
+			this.sampleFallback(devs, devices);
+	},
+
+	// Only if getRealtimeStats is not permitted: deltas of the counters.
+	sampleFallback(devs, devices) {
+		const live = devs.filter(d => devices[d]?.stats);
+		if (!live.length)
+			return;
+
+		const now = Date.now(), key = live.join(' ');
+		const rxb = live.reduce((n, d) => n + devices[d].stats.rx_bytes, 0);
+		const txb = live.reduce((n, d) => n + devices[d].stats.tx_bytes, 0);
+
+		if (this.prev?.dev == key) {
+			const dt = (now - this.prev.t) / 1000;
+			const rx = (rxb - this.prev.rx) / dt, tx = (txb - this.prev.tx) / dt;
+			if (dt > 0 && rx >= 0 && tx >= 0)
+				this.fallback.push({ t: now / 1000, rx, tx });
+		}
+
+		this.prev = { dev: key, t: now, rx: rxb, tx: txb };
+		this.fallback = this.fallback.filter(s => s.t >= now / 1000 - WINDOW_S);
+	},
+
+	// Summed uplink rates, oldest first.
+	points() {
+		if (this.useFallback)
+			return this.fallback;
+
+		const sum = new Map();
+		Object.values(this.series).forEach(map => map.forEach((v, t) => {
+			const s = sum.get(t) ?? { t, rx: 0, tx: 0 };
+			s.rx += v.rx;
+			s.tx += v.tx;
+			sum.set(t, s);
+		}));
+
+		return [...sum.values()].sort((a, b) => a.t - b.t);
 	},
 
 	segments(board, info, ifaces, devices, ctCount, ctMax) {
@@ -122,21 +244,10 @@ return baseclass.extend({
 		if (!isNaN(n))
 			segs.push({ cls: 'data ' + (isNaN(max) ? 'ok' : level(n / max * 100)), text: '%s %d'.format(_('Conn'), n) });
 
-		// Sum every uplink's device once (wan and wan6 share pppoe-wan).
-		const devs = [...new Set(wans.map(w => w.l3_device).filter(d => devices[d]?.stats))];
-		if (devs.length) {
-			const now = Date.now(), key = devs.join(' ');
-			const rxb = devs.reduce((n, d) => n + devices[d].stats.rx_bytes, 0);
-			const txb = devs.reduce((n, d) => n + devices[d].stats.tx_bytes, 0);
-			if (this.prev && this.prev.dev == key) {
-				const dt = (now - this.prev.t) / 1000;
-				const rx = (rxb - this.prev.rx) / dt, tx = (txb - this.prev.tx) / dt;
-				segs.push({ cls: 'terracotta', text: '↓ %s ↑ %s Mbps'.format(mbps(rx), mbps(tx)) });
-				if (dt > 0 && rx >= 0 && tx >= 0)
-					this.samples?.push({ t: now / 1000, rx, tx });
-			}
-			this.prev = { dev: key, t: now, rx: rxb, tx: txb };
-		}
+		const pts = this.points ? this.points() : [];
+		const last = pts[pts.length - 1];
+		if (last && Date.now() / 1000 - last.t <= GAP_S * 2)
+			segs.push({ cls: 'terracotta', text: '↓ %s ↑ %s Mbps'.format(mbps(last.rx), mbps(last.tx)) });
 
 		segs.push({ cls: 'sandstone', text: new Date(info.localtime * 1000).toISOString().substr(11, 8) });
 
@@ -148,73 +259,30 @@ return baseclass.extend({
 		if (!view)
 			return;
 
-		this.chart = {
-			rxFill: E('path', { 'class': 'rx-fill' }),
-			rx: E('path', { 'class': 'rx' }),
-			tx: E('path', { 'class': 'tx' }),
-			legend: E('div', { 'class': 'nacre-traffic-legend' })
-		};
-
-		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		const NS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(NS, 'svg');
 		svg.setAttribute('viewBox', '0 0 %d %d'.format(CHART_W, CHART_H));
 		svg.setAttribute('preserveAspectRatio', 'none');
 		svg.setAttribute('role', 'img');
 		svg.setAttribute('aria-label', _('WAN download and upload rate'));
-		svg.innerHTML = '<path class="grid" d="M0 %d H%d M0 %d H%d M0 %d H%d"/>'.format(
-			CHART_H / 4, CHART_W, CHART_H / 2, CHART_W, CHART_H * 3 / 4, CHART_W);
-		[ 'rxFill', 'rx', 'tx' ].forEach(k => {
-			const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-			p.setAttribute('class', this.chart[k].getAttribute('class'));
+
+		this.chart = { span: E('span'), legend: E('div', { 'class': 'nacre-traffic-legend' }),
+		               labels: E('div', { 'class': 'nacre-traffic-axis', 'aria-hidden': 'true' }) };
+
+		[ 'grid', 'rx-fill', 'rx', 'tx' ].forEach(cls => {
+			const p = document.createElementNS(NS, 'path');
+			p.setAttribute('class', cls);
 			svg.appendChild(p);
-			this.chart[k] = p;
+			this.chart[cls] = p;
 		});
 
 		view.parentNode.insertBefore(E('section', { 'id': 'nacre-traffic', 'aria-label': _('WAN traffic') }, [
 			E('div', { 'class': 'nacre-traffic-head' }, [
-				E('h3', {}, [ _('WAN traffic'), this.chart.span = E('span') ]),
+				E('h3', {}, [ _('WAN traffic'), this.chart.span ]),
 				this.chart.legend
 			]),
-			svg
+			E('div', { 'class': 'nacre-traffic-plot' }, [ svg, this.chart.labels ])
 		]), view);
-	},
-
-	// Fill the window at once from LuCI's own realtime collector. luci-bwc only
-	// runs while polled, so its buffer can be stale: keep in-window samples only.
-	seed(ifaces) {
-		// Seed from a single uplink only: luci-bwc tracks one device per call.
-		const wans = wanSet(ifaces, this.pinned).filter(i => i.l3_device);
-		const wan = wans.length == 1 ? wans[0] : null;
-
-		if (this.seeded || !wan || !this.chart)
-			return;
-
-		this.seeded = true;
-
-		// luci-bwc keeps a fixed 60-entry buffer and only samples while someone
-		// polls it, so older entries are leftover fragments. Seed only the last
-		// contiguous run, and only if it reaches the present.
-		L.resolveDefault(callRealtime('interface', wan.l3_device), []).then(rows => {
-			let run = [];
-
-			for (let i = 1; i < rows.length; i++) {
-				const [t0, rx0, , tx0] = rows[i - 1], [t1, rx1, , tx1] = rows[i];
-
-				if (t1 - t0 > GAP_S || t1 <= t0 || rx1 < rx0 || tx1 < tx0) {
-					run = [];
-					continue;
-				}
-
-				run.push({ t: t1, rx: (rx1 - rx0) / (t1 - t0), tx: (tx1 - tx0) / (t1 - t0) });
-			}
-
-			const end = run[run.length - 1]?.t ?? 0;
-			if (Date.now() / 1000 - end > GAP_S)
-				return;
-
-			const first = this.samples[0]?.t ?? Infinity;
-			this.samples = run.filter(s => s.t < first).concat(this.samples);
-			this.drawChart();
-		});
 	},
 
 	drawChart() {
@@ -222,15 +290,16 @@ return baseclass.extend({
 			return;
 
 		const now = Date.now() / 1000, since = now - WINDOW_S;
-		this.samples = this.samples.filter(s => s.t >= since);
-
-		const pts = this.samples;
+		const pts = this.points().filter(s => s.t >= since);
 		const peakRx = Math.max(0, ...pts.map(s => s.rx)), peakTx = Math.max(0, ...pts.map(s => s.tx));
-		const top = Math.max(FLOOR_BPS, peakRx, peakTx) * 1.15;
+		const topM = Math.max(MIN_TOP_MBPS, toMbps(Math.max(peakRx, peakTx)) * 1.25);
+
 		const x = t => ((t - since) / WINDOW_S * CHART_W).toFixed(1);
-		const y = v => (CHART_H - v / top * CHART_H).toFixed(1);
-		// Split at gaps (hidden tab, stale seed): an unknown stretch must not be
-		// drawn as a straight line that looks like steady traffic.
+		const yPx = m => CHART_H - logY(m, topM) * CHART_H;
+		const y = v => yPx(toMbps(v)).toFixed(1);
+
+		// Split at gaps (page hidden longer than luci-bwc's 60 s buffer): an
+		// unknown stretch must not be drawn as a straight line.
 		const runs = [];
 		pts.forEach((s, i) => {
 			if (!i || s.t - pts[i - 1].t > GAP_S)
@@ -245,7 +314,13 @@ return baseclass.extend({
 
 		this.chart.rx.setAttribute('d', line('rx'));
 		this.chart.tx.setAttribute('d', line('tx'));
-		this.chart.rxFill.setAttribute('d', fill('rx'));
+		this.chart['rx-fill'].setAttribute('d', fill('rx'));
+
+		const grid = GRID_MBPS.filter(g => g < topM);
+		this.chart.grid.setAttribute('d', grid.map(g => 'M0 %.1f H%d'.format(yPx(g), CHART_W)).join(' '));
+		this.chart.labels.replaceChildren(...grid.map(g => E('span', {
+			'style': 'top:%.2f%%'.format(yPx(g) / CHART_H * 100)
+		}, [ g >= 1000 ? '%d Gbps'.format(g / 1000) : '%d Mbps'.format(g) ])));
 
 		// Until the page has held a full window, say how much it has: an empty
 		// left side means "not collected yet", not "no traffic".

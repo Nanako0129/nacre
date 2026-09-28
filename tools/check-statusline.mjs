@@ -59,6 +59,14 @@ try {
 		return { auto_named_odd, auto_two, auto_none, pinned_one_down };
 	}));
 
+	// 2c) continuity while simply watching: 40 s visible, then count runs
+	await page.waitForTimeout(40000);
+	result.watching = await page.evaluate(() => ({
+		runs: ((document.querySelector('#nacre-traffic path.rx')?.getAttribute('d') ?? '').match(/M/g) ?? []).length,
+		points: (document.querySelector('#nacre-traffic path.rx')?.getAttribute('d') ?? '').split(/[ML]/).length - 1,
+		title: document.querySelector('#nacre-traffic h3')?.textContent,
+	}));
+
 	// 3) hidden tab -> no polling. Count the module's own update() calls: LuCI's
 	// overview includes poll the same ubus objects, so request counting can't tell.
 	await page.evaluate(() => L.require('nacre-statusline').then(m => {
@@ -79,6 +87,8 @@ try {
 		txPoints: (document.querySelector('#nacre-traffic path.tx')?.getAttribute('d') ?? '').split(/[ML]/).length - 1,
 		legend: document.querySelector('.nacre-traffic-legend')?.textContent,
 		title: document.querySelector('#nacre-traffic h3')?.textContent,
+		rxRuns: ((document.querySelector('#nacre-traffic path.rx')?.getAttribute('d') ?? '').match(/M/g) ?? []).length,
+		axis: [...document.querySelectorAll('.nacre-traffic-axis span')].map(e => e.textContent),
 	}));
 	await page.screenshot({ path: 'shots/statusline.png', clip: { x: 248, y: 0, width: 1192, height: 60 } });
 	await page.screenshot({ path: 'shots/overview-chart.png', clip: { x: 248, y: 0, width: 1192, height: 420 } });
