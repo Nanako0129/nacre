@@ -5,6 +5,7 @@
 'require rpc';
 'require uci';
 'require ui';
+'require tools.widgets as widgets';
 
 // The only path the ACL lets cgi-io write; luci.nacre reads it from there.
 var UPLOAD_PATH = '/tmp/nacre-upload.bin';
@@ -193,6 +194,12 @@ return view.extend({
 		o.value('light', _('Light'));
 		o.value('dark', _('Dark'));
 		o.default = 'auto';
+
+		o = s.option(widgets.NetworkSelect, 'wan', _('WAN interfaces'),
+			_('Interfaces the status line and traffic chart treat as uplinks. Leave empty to detect them from the IPv4 default route; pick them to also see an uplink that is down.'));
+		o.multiple = true;
+		o.nocreate = true;
+		o.rmempty = true;
 
 		o = s.option(form.Value, 'accent', _('Accent color'),
 			_('Used for the active menu item, primary buttons and the login page host name. Hex, like #A1B5D8.'));

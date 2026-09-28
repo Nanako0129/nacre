@@ -2,6 +2,7 @@
 'require baseclass';
 'require rpc';
 'require fs';
+'require uci';
 
 // coralline-style status line for the overview page. Uses only calls that
 // LuCI's own status pages already hold ACLs for (no new rpcd grants):
@@ -31,6 +32,16 @@ function level(pct) {
 	return pct >= HOT ? 'hot' : pct >= WARN ? 'warn' : 'ok';
 }
 
+// WAN = interfaces named in uci nacre.global.wan, or else every interface that
+// holds an IPv4 default route (what LuCI's own overview does). Names never
+// matter in auto mode, and a second uplink is picked up by itself.
+function wanSet(ifaces, pinned) {
+	if (pinned.length)
+		return pinned.map(name => ifaces.find(i => i.interface == name) ?? { interface: name, up: false });
+
+	return ifaces.filter(i => (i.route ?? []).some(r => r.target == '0.0.0.0' && r.mask == 0));
+}
+
 function mbps(bytesPerSec) {
 	const v = bytesPerSec * 8 / 1e6;
 	return v >= 100 ? v.toFixed(0) : v.toFixed(1);
@@ -48,6 +59,10 @@ return baseclass.extend({
 		this.samples = [];
 		this.seeded = false;
 		this.board = callBoard();
+		this.pinned = [];
+		L.resolveDefault(uci.load('nacre'), null).then(() => {
+			this.pinned = L.toArray(uci.get('nacre', 'global', 'wan'));
+		});
 		this.buildChart();
 
 		const tick = () => { if (!document.hidden) this.update(); };
@@ -73,18 +88,24 @@ return baseclass.extend({
 
 	segments(board, info, ifaces, devices, ctCount, ctMax) {
 		const segs = [];
-		const wan = ifaces.find(i => i.interface == 'wan');
-		const wan6 = ifaces.find(i => i.interface == 'wan6' || i.interface == 'wan_6');
+		const wans = wanSet(ifaces, this.pinned ?? []);
 
 		segs.push({ cls: 'sky', text: board.hostname });
 
-		if (wan) {
-			const up = wan.up;
-			segs.push({ cls: up ? 'sage' : 'hot', text: '%s %s'.format(_('WAN'), up ? '✓' : '✗'),
-			            title: up ? (wan['ipv4-address']?.[0]?.address ?? '') : _('Not connected') });
+		if (!wans.length) {
+			segs.push({ cls: 'hot', text: '%s ✗'.format(_('WAN')), title: _('No default route') });
+		}
+		else if (wans.length == 1) {
+			const w = wans[0];
+			segs.push({ cls: w.up ? 'sage' : 'hot', text: '%s %s'.format(_('WAN'), w.up ? '✓' : '✗'),
+			            title: w.up ? '%s · %s'.format(w.interface, w['ipv4-address']?.[0]?.address ?? '') : '%s · %s'.format(w.interface, _('Not connected')) });
+		}
+		else {
+			wans.forEach(w => segs.push({ cls: w.up ? 'sage' : 'hot', text: '%s %s'.format(w.interface, w.up ? '✓' : '✗'),
+				title: w.up ? (w['ipv4-address']?.[0]?.address ?? '') : _('Not connected') }));
 		}
 
-		const pd = wan6?.['ipv6-prefix']?.[0];
+		const pd = ifaces.map(i => i['ipv6-prefix']?.[0]).find(p => p);
 		if (pd)
 			segs.push({ cls: 'lavender', text: 'IPv6 /%d'.format(pd.mask), title: '%s/%d'.format(pd.address, pd.mask) });
 
@@ -101,17 +122,20 @@ return baseclass.extend({
 		if (!isNaN(n))
 			segs.push({ cls: 'data ' + (isNaN(max) ? 'ok' : level(n / max * 100)), text: '%s %d'.format(_('Conn'), n) });
 
-		const dev = wan?.l3_device && devices[wan.l3_device];
-		if (dev?.stats) {
-			const now = Date.now();
-			if (this.prev && this.prev.dev == wan.l3_device) {
+		// Sum every uplink's device once (wan and wan6 share pppoe-wan).
+		const devs = [...new Set(wans.map(w => w.l3_device).filter(d => devices[d]?.stats))];
+		if (devs.length) {
+			const now = Date.now(), key = devs.join(' ');
+			const rxb = devs.reduce((n, d) => n + devices[d].stats.rx_bytes, 0);
+			const txb = devs.reduce((n, d) => n + devices[d].stats.tx_bytes, 0);
+			if (this.prev && this.prev.dev == key) {
 				const dt = (now - this.prev.t) / 1000;
-				const rx = (dev.stats.rx_bytes - this.prev.rx) / dt, tx = (dev.stats.tx_bytes - this.prev.tx) / dt;
+				const rx = (rxb - this.prev.rx) / dt, tx = (txb - this.prev.tx) / dt;
 				segs.push({ cls: 'terracotta', text: '↓ %s ↑ %s Mbps'.format(mbps(rx), mbps(tx)) });
 				if (dt > 0 && rx >= 0 && tx >= 0)
-					this.samples.push({ t: now / 1000, rx, tx });
+					this.samples?.push({ t: now / 1000, rx, tx });
 			}
-			this.prev = { dev: wan.l3_device, t: now, rx: dev.stats.rx_bytes, tx: dev.stats.tx_bytes };
+			this.prev = { dev: key, t: now, rx: rxb, tx: txb };
 		}
 
 		segs.push({ cls: 'sandstone', text: new Date(info.localtime * 1000).toISOString().substr(11, 8) });
@@ -157,9 +181,11 @@ return baseclass.extend({
 	// Fill the window at once from LuCI's own realtime collector. luci-bwc only
 	// runs while polled, so its buffer can be stale: keep in-window samples only.
 	seed(ifaces) {
-		const wan = ifaces.find(i => i.interface == 'wan');
+		// Seed from a single uplink only: luci-bwc tracks one device per call.
+		const wans = wanSet(ifaces, this.pinned).filter(i => i.l3_device);
+		const wan = wans.length == 1 ? wans[0] : null;
 
-		if (this.seeded || !wan?.l3_device || !this.chart)
+		if (this.seeded || !wan || !this.chart)
 			return;
 
 		this.seeded = true;

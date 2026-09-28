@@ -288,3 +288,12 @@ msgstr ""
 
 msgid "collected %s of %d minutes"
 msgstr ""
+
+msgid "WAN interfaces"
+msgstr ""
+
+msgid "Interfaces the status line and traffic chart treat as uplinks. Leave empty to detect them from the IPv4 default route; pick them to also see an uplink that is down."
+msgstr ""
+
+msgid "No default route"
+msgstr ""

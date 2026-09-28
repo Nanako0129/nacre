@@ -170,3 +170,12 @@ msgstr "WAN 下載與上傳速率"
 
 msgid "collected %s of %d minutes"
 msgstr "已收集 %s／%d 分鐘"
+
+msgid "WAN interfaces"
+msgstr "WAN 介面"
+
+msgid "Interfaces the status line and traffic chart treat as uplinks. Leave empty to detect them from the IPv4 default route; pick them to also see an uplink that is down."
+msgstr "狀態列與流量圖視為對外線路的介面。留空則依 IPv4 預設路由自動判斷；手動指定後，斷線的線路也會顯示出來。"
+
+msgid "No default route"
+msgstr "沒有預設路由"

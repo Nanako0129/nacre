@@ -43,6 +43,22 @@ try {
 		return segs.find(s => s.text.startsWith('WAN'));
 	}));
 
+	// 2b) WAN detection: by default route (auto) and by a pinned uci list
+	result.wan_detection = await page.evaluate(() => L.require('nacre-statusline').then(m => {
+		const info = { load: [0, 0, 0], memory: { total: 100, available: 50 }, localtime: 0 };
+		const dflt = [{ target: '0.0.0.0', mask: 0 }];
+		const texts = segs => segs.filter(s => /✓|✗/.test(s.text)).map(s => s.text);
+		const saved = m.pinned;
+		m.pinned = [];
+		const auto_named_odd = texts(m.segments({ hostname: 'x' }, info, [{ interface: 'hinet', up: true, route: dflt }], {}, null, null));
+		const auto_two = texts(m.segments({ hostname: 'x' }, info, [{ interface: 'wan', up: true, route: dflt }, { interface: 'wan2', up: true, route: dflt }], {}, null, null));
+		const auto_none = texts(m.segments({ hostname: 'x' }, info, [{ interface: 'lan', up: true, route: [] }], {}, null, null));
+		m.pinned = ['wan', 'wan2'];
+		const pinned_one_down = texts(m.segments({ hostname: 'x' }, info, [{ interface: 'wan', up: true, route: dflt }, { interface: 'wan2', up: false }], {}, null, null));
+		m.pinned = saved;
+		return { auto_named_odd, auto_two, auto_none, pinned_one_down };
+	}));
+
 	// 3) hidden tab -> no polling. Count the module's own update() calls: LuCI's
 	// overview includes poll the same ubus objects, so request counting can't tell.
 	await page.evaluate(() => L.require('nacre-statusline').then(m => {
