@@ -167,3 +167,6 @@ msgstr "峰值"
 
 msgid "WAN download and upload rate"
 msgstr "WAN 下載與上傳速率"
+
+msgid "collected %s of %d minutes"
+msgstr "已收集 %s／%d 分鐘"

@@ -285,3 +285,6 @@ msgstr ""
 
 msgid "WAN download and upload rate"
 msgstr ""
+
+msgid "collected %s of %d minutes"
+msgstr ""

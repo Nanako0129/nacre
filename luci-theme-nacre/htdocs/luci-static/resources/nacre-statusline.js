@@ -147,7 +147,7 @@ return baseclass.extend({
 
 		view.parentNode.insertBefore(E('section', { 'id': 'nacre-traffic', 'aria-label': _('WAN traffic') }, [
 			E('div', { 'class': 'nacre-traffic-head' }, [
-				E('h3', {}, [ _('WAN traffic'), E('span', {}, [ ' · ', _('last %d minutes').format(WINDOW_S / 60) ]) ]),
+				E('h3', {}, [ _('WAN traffic'), this.chart.span = E('span') ]),
 				this.chart.legend
 			]),
 			svg
@@ -164,17 +164,29 @@ return baseclass.extend({
 
 		this.seeded = true;
 
+		// luci-bwc keeps a fixed 60-entry buffer and only samples while someone
+		// polls it, so older entries are leftover fragments. Seed only the last
+		// contiguous run, and only if it reaches the present.
 		L.resolveDefault(callRealtime('interface', wan.l3_device), []).then(rows => {
-			const since = Date.now() / 1000 - WINDOW_S, seeds = [];
+			let run = [];
 
 			for (let i = 1; i < rows.length; i++) {
 				const [t0, rx0, , tx0] = rows[i - 1], [t1, rx1, , tx1] = rows[i];
-				if (t1 > since && t1 > t0 && rx1 >= rx0 && tx1 >= tx0)
-					seeds.push({ t: t1, rx: (rx1 - rx0) / (t1 - t0), tx: (tx1 - tx0) / (t1 - t0) });
+
+				if (t1 - t0 > GAP_S || t1 <= t0 || rx1 < rx0 || tx1 < tx0) {
+					run = [];
+					continue;
+				}
+
+				run.push({ t: t1, rx: (rx1 - rx0) / (t1 - t0), tx: (tx1 - tx0) / (t1 - t0) });
 			}
 
+			const end = run[run.length - 1]?.t ?? 0;
+			if (Date.now() / 1000 - end > GAP_S)
+				return;
+
 			const first = this.samples[0]?.t ?? Infinity;
-			this.samples = seeds.filter(s => s.t < first).concat(this.samples);
+			this.samples = run.filter(s => s.t < first).concat(this.samples);
 			this.drawChart();
 		});
 	},
@@ -208,6 +220,13 @@ return baseclass.extend({
 		this.chart.rx.setAttribute('d', line('rx'));
 		this.chart.tx.setAttribute('d', line('tx'));
 		this.chart.rxFill.setAttribute('d', fill('rx'));
+
+		// Until the page has held a full window, say how much it has: an empty
+		// left side means "not collected yet", not "no traffic".
+		const covered = pts.length ? now - pts[0].t : 0;
+		this.chart.span.textContent = ' · ' + (covered >= WINDOW_S - GAP_S
+			? _('last %d minutes').format(WINDOW_S / 60)
+			: _('collected %s of %d minutes').format('%d:%02d'.format(Math.floor(covered / 60), Math.floor(covered % 60)), WINDOW_S / 60));
 
 		const last = pts[pts.length - 1];
 		this.chart.legend.replaceChildren(
