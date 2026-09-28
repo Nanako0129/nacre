@@ -273,3 +273,15 @@ msgstr ""
 #: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:122
 msgid "unknown error"
 msgstr ""
+
+msgid "WAN traffic"
+msgstr ""
+
+msgid "last %d minutes"
+msgstr ""
+
+msgid "peak"
+msgstr ""
+
+msgid "WAN download and upload rate"
+msgstr ""

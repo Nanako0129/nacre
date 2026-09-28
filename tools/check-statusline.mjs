@@ -57,7 +57,15 @@ try {
 	await page.waitForTimeout(11000);
 	result.updates_after_visible = await page.evaluate(() => window.__nacreUpdates) - result.updates_while_hidden;
 
+	// traffic chart: seeded + live points, legend filled
+	result.chart = await page.evaluate(() => ({
+		rxPoints: (document.querySelector('#nacre-traffic path.rx')?.getAttribute('d') ?? '').split(/[ML]/).length - 1,
+		txPoints: (document.querySelector('#nacre-traffic path.tx')?.getAttribute('d') ?? '').split(/[ML]/).length - 1,
+		legend: document.querySelector('.nacre-traffic-legend')?.textContent,
+		title: document.querySelector('#nacre-traffic h3')?.textContent,
+	}));
 	await page.screenshot({ path: 'shots/statusline.png', clip: { x: 248, y: 0, width: 1192, height: 60 } });
+	await page.screenshot({ path: 'shots/overview-chart.png', clip: { x: 248, y: 0, width: 1192, height: 420 } });
 	await page.goto(`${BASE}/admin/logout`);
 } finally {
 	await browser.close();

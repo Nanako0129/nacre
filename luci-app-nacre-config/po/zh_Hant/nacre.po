@@ -155,3 +155,15 @@ msgid "unknown error"
 msgstr "未知錯誤"
 msgid "WAN"
 msgstr "WAN"
+
+msgid "WAN traffic"
+msgstr "WAN 流量"
+
+msgid "last %d minutes"
+msgstr "最近 %d 分鐘"
+
+msgid "peak"
+msgstr "峰值"
+
+msgid "WAN download and upload rate"
+msgstr "WAN 下載與上傳速率"

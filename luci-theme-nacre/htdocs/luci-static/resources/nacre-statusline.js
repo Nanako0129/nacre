@@ -6,14 +6,23 @@
 // coralline-style status line for the overview page. Uses only calls that
 // LuCI's own status pages already hold ACLs for (no new rpcd grants):
 // system board/info and conntrack files (luci-mod-status-index),
-// network.interface dump and luci-rpc getNetworkDevices (luci-base).
+// network.interface dump and luci-rpc getNetworkDevices (luci-base),
+// luci getRealtimeStats (luci-mod-status-realtime) to seed the traffic chart.
 
 const callBoard = rpc.declare({ object: 'system', method: 'board' });
 const callInfo = rpc.declare({ object: 'system', method: 'info' });
 const callIfaces = rpc.declare({ object: 'network.interface', method: 'dump', expect: { 'interface': [] } });
 const callDevices = rpc.declare({ object: 'luci-rpc', method: 'getNetworkDevices', expect: { '': {} } });
+const callRealtime = rpc.declare({ object: 'luci', method: 'getRealtimeStats', params: [ 'mode', 'device' ], expect: { result: [] } });
 
-const POLL_MS = 5000;
+const POLL_MS = 1000;
+
+// Traffic chart: a rolling window of per-second WAN rates. Longer history would
+// need vnstat/collectd data and a new ACL, so the window is what the page holds.
+const WINDOW_S = 300;
+const CHART_W = 640, CHART_H = 180;
+const FLOOR_BPS = 1e6 / 8; /* keep the y axis at >= 1 Mbps so idle noise stays flat */
+const GAP_S = 3; /* samples further apart than this are drawn as separate runs */
 
 // gauge colour thresholds, as coralline's VL_WARN_PCT / VL_HOT_PCT
 const WARN = 50, HOT = 75;
@@ -36,6 +45,10 @@ return baseclass.extend({
 		this.el = E('div', { 'id': 'nacre-statusline', 'role': 'status', 'aria-label': _('Status line') });
 		host.insertBefore(this.el, document.querySelector('#indicators'));
 		this.prev = null;
+		this.samples = [];
+		this.seeded = false;
+		this.board = callBoard();
+		this.buildChart();
 
 		const tick = () => { if (!document.hidden) this.update(); };
 		tick();
@@ -45,7 +58,7 @@ return baseclass.extend({
 
 	update() {
 		return Promise.all([
-			callBoard(),
+			this.board,
 			callInfo(),
 			L.resolveDefault(callIfaces(), []),
 			L.resolveDefault(callDevices(), {}),
@@ -53,6 +66,8 @@ return baseclass.extend({
 			L.resolveDefault(fs.read('/proc/sys/net/netfilter/nf_conntrack_max'), null)
 		]).then(([board, info, ifaces, devices, ctCount, ctMax]) => {
 			this.render(this.segments(board, info, ifaces, devices, ctCount, ctMax));
+			this.seed(ifaces);
+			this.drawChart();
 		}).catch(() => {});
 	},
 
@@ -91,8 +106,10 @@ return baseclass.extend({
 			const now = Date.now();
 			if (this.prev && this.prev.dev == wan.l3_device) {
 				const dt = (now - this.prev.t) / 1000;
-				segs.push({ cls: 'terracotta', text: '↓ %s ↑ %s Mbps'.format(
-					mbps((dev.stats.rx_bytes - this.prev.rx) / dt), mbps((dev.stats.tx_bytes - this.prev.tx) / dt)) });
+				const rx = (dev.stats.rx_bytes - this.prev.rx) / dt, tx = (dev.stats.tx_bytes - this.prev.tx) / dt;
+				segs.push({ cls: 'terracotta', text: '↓ %s ↑ %s Mbps'.format(mbps(rx), mbps(tx)) });
+				if (dt > 0 && rx >= 0 && tx >= 0)
+					this.samples.push({ t: now / 1000, rx, tx });
 			}
 			this.prev = { dev: wan.l3_device, t: now, rx: dev.stats.rx_bytes, tx: dev.stats.tx_bytes };
 		}
@@ -100,6 +117,104 @@ return baseclass.extend({
 		segs.push({ cls: 'sandstone', text: new Date(info.localtime * 1000).toISOString().substr(11, 8) });
 
 		return segs;
+	},
+
+	buildChart() {
+		const view = document.querySelector('#view');
+		if (!view)
+			return;
+
+		this.chart = {
+			rxFill: E('path', { 'class': 'rx-fill' }),
+			rx: E('path', { 'class': 'rx' }),
+			tx: E('path', { 'class': 'tx' }),
+			legend: E('div', { 'class': 'nacre-traffic-legend' })
+		};
+
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		svg.setAttribute('viewBox', '0 0 %d %d'.format(CHART_W, CHART_H));
+		svg.setAttribute('preserveAspectRatio', 'none');
+		svg.setAttribute('role', 'img');
+		svg.setAttribute('aria-label', _('WAN download and upload rate'));
+		svg.innerHTML = '<path class="grid" d="M0 %d H%d M0 %d H%d M0 %d H%d"/>'.format(
+			CHART_H / 4, CHART_W, CHART_H / 2, CHART_W, CHART_H * 3 / 4, CHART_W);
+		[ 'rxFill', 'rx', 'tx' ].forEach(k => {
+			const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+			p.setAttribute('class', this.chart[k].getAttribute('class'));
+			svg.appendChild(p);
+			this.chart[k] = p;
+		});
+
+		view.parentNode.insertBefore(E('section', { 'id': 'nacre-traffic', 'aria-label': _('WAN traffic') }, [
+			E('div', { 'class': 'nacre-traffic-head' }, [
+				E('h3', {}, [ _('WAN traffic'), E('span', {}, [ ' · ', _('last %d minutes').format(WINDOW_S / 60) ]) ]),
+				this.chart.legend
+			]),
+			svg
+		]), view);
+	},
+
+	// Fill the window at once from LuCI's own realtime collector. luci-bwc only
+	// runs while polled, so its buffer can be stale: keep in-window samples only.
+	seed(ifaces) {
+		const wan = ifaces.find(i => i.interface == 'wan');
+
+		if (this.seeded || !wan?.l3_device || !this.chart)
+			return;
+
+		this.seeded = true;
+
+		L.resolveDefault(callRealtime('interface', wan.l3_device), []).then(rows => {
+			const since = Date.now() / 1000 - WINDOW_S, seeds = [];
+
+			for (let i = 1; i < rows.length; i++) {
+				const [t0, rx0, , tx0] = rows[i - 1], [t1, rx1, , tx1] = rows[i];
+				if (t1 > since && t1 > t0 && rx1 >= rx0 && tx1 >= tx0)
+					seeds.push({ t: t1, rx: (rx1 - rx0) / (t1 - t0), tx: (tx1 - tx0) / (t1 - t0) });
+			}
+
+			const first = this.samples[0]?.t ?? Infinity;
+			this.samples = seeds.filter(s => s.t < first).concat(this.samples);
+			this.drawChart();
+		});
+	},
+
+	drawChart() {
+		if (!this.chart)
+			return;
+
+		const now = Date.now() / 1000, since = now - WINDOW_S;
+		this.samples = this.samples.filter(s => s.t >= since);
+
+		const pts = this.samples;
+		const peakRx = Math.max(0, ...pts.map(s => s.rx)), peakTx = Math.max(0, ...pts.map(s => s.tx));
+		const top = Math.max(FLOOR_BPS, peakRx, peakTx) * 1.15;
+		const x = t => ((t - since) / WINDOW_S * CHART_W).toFixed(1);
+		const y = v => (CHART_H - v / top * CHART_H).toFixed(1);
+		// Split at gaps (hidden tab, stale seed): an unknown stretch must not be
+		// drawn as a straight line that looks like steady traffic.
+		const runs = [];
+		pts.forEach((s, i) => {
+			if (!i || s.t - pts[i - 1].t > GAP_S)
+				runs.push([]);
+			runs[runs.length - 1].push(s);
+		});
+
+		const path = (run, key) => run.map((s, i) => (i ? 'L' : 'M') + x(s.t) + ' ' + y(s[key])).join(' ');
+		const line = key => runs.map(run => path(run, key)).join(' ');
+		const fill = key => runs.filter(run => run.length > 1).map(run => '%s L%s %d L%s %d Z'.format(
+			path(run, key), x(run[run.length - 1].t), CHART_H, x(run[0].t), CHART_H)).join(' ');
+
+		this.chart.rx.setAttribute('d', line('rx'));
+		this.chart.tx.setAttribute('d', line('tx'));
+		this.chart.rxFill.setAttribute('d', fill('rx'));
+
+		const last = pts[pts.length - 1];
+		this.chart.legend.replaceChildren(
+			E('span', { 'class': 'rx' }, [ '↓ %s Mbps'.format(last ? mbps(last.rx) : '–'),
+				E('small', {}, [ ' %s %s'.format(_('peak'), mbps(peakRx)) ]) ]),
+			E('span', { 'class': 'tx' }, [ '↑ %s Mbps'.format(last ? mbps(last.tx) : '–'),
+				E('small', {}, [ ' %s %s'.format(_('peak'), mbps(peakTx)) ]) ]));
 	},
 
 	render(segs) {

@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_VERSION:=0.1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 LUCI_TITLE:=nacre theme
 LUCI_DEPENDS:=+luci-base
