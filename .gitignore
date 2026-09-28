@@ -1,0 +1,14 @@
+# Build output
+/bin/
+/dist/
+
+# Screenshots and Playwright artifacts from the production router: may contain
+# WAN IPs, MACs, hostnames and secrets. Never commit.
+/shots/
+/test-results/
+/playwright-report/
+*.zip
+*.har
+trace*.zip
+node_modules/
+.DS_Store

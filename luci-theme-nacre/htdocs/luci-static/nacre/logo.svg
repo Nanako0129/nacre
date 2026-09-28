@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<title>nacre</title>
+<clipPath id="nacreLid"><path d="M12 30 C 11 19 20 12 32 12 C 44 12 53 19 52 28 C 42 25 22 25 12 30 Z"></path></clipPath>
+<clipPath id="nacreBowl"><path d="M8 35 C 16 31 48 31 56 35 C 54 46 44 53 32 53 C 20 53 10 46 8 35 Z"></path></clipPath>
+<rect width="64" height="64" rx="16" fill="#2A3142"></rect>
+<g clip-path="url(#nacreLid)"><rect x="8" y="8" width="48" height="26" fill="#C4B7DC"></rect><ellipse cx="32" cy="28" rx="16.5" ry="12.5" fill="#A1B5D8"></ellipse><ellipse cx="32" cy="28" rx="11.5" ry="8.5" fill="#9EC3C0"></ellipse><ellipse cx="32" cy="28" rx="6.5" ry="4.8" fill="#C2D8B9"></ellipse></g>
+<g clip-path="url(#nacreBowl)"><rect x="6" y="30" width="52" height="26" fill="#A1B5D8"></rect><ellipse cx="32" cy="33" rx="21" ry="17" fill="#C4B7DC"></ellipse><ellipse cx="32" cy="33" rx="17" ry="13.5" fill="#DCC0D2"></ellipse><ellipse cx="32" cy="33" rx="13" ry="10" fill="#EEB99F"></ellipse><ellipse cx="32" cy="33" rx="9" ry="6.8" fill="#E9CC97"></ellipse></g>
+<circle cx="32" cy="38" r="8.5" fill="#F8E6D2"></circle>
+<path d="M24.2 40.5 A 8.5 8.5 0 0 0 39.8 40.5 A 9.5 9.5 0 0 1 24.2 40.5 Z" fill="#DCC0D2"></path>
+<circle cx="29" cy="35" r="2.5" fill="#FFFFFF"></circle>
+</svg>

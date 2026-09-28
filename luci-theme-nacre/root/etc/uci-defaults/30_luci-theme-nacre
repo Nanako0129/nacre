@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Register the theme only. Unlike bootstrap, never touch luci.main.mediaurlbase:
+# switching the active theme is the user's (or install.sh -y's) decision.
+uci -q get luci.themes.Nacre >/dev/null || {
+	uci set luci.themes.Nacre=/luci-static/nacre
+	uci commit luci
+}
+
+exit 0
