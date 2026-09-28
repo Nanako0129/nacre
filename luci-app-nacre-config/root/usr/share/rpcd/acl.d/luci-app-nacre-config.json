@@ -3,6 +3,16 @@
 		"description": "Grant access to nacre theme settings",
 		"read": {
 			"uci": [ "nacre" ]
+		},
+		"write": {
+			"uci": [ "nacre" ],
+			"cgi-io": [ "upload" ],
+			"file": {
+				"/tmp/nacre-upload.bin": [ "write" ]
+			},
+			"ubus": {
+				"luci.nacre": [ "set_background", "clear_background" ]
+			}
 		}
 	}
 }

@@ -1,0 +1,275 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:197
+msgid "Accent color"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:187
+msgid "Appearance settings for the nacre theme."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/sysauth.ut:37
+msgid "Authorization Required"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:211
+msgid "Background blur behind the login card, in pixels (0–30)."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:121
+msgid "Background rejected: %s (%s)"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:137
+msgid "Background removed."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:126
+msgid "Background updated. It shows on the login page."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:113
+msgid "Choose an image first."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:191
+msgid "Color mode"
+msgstr ""
+
+#: luci-theme-nacre/htdocs/luci-static/resources/nacre-statusline.js:87
+msgid "Conn"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:35
+msgid "Could not save the setting."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:34
+msgid "Could not write the background file."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:155
+msgid "Current background"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:194
+msgid "Dark"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:208
+msgid "Expecting a hex color like #A1B5D8"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:192
+msgid "Follow system"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:98
+msgid "Go to firmware upgrade..."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:88
+msgid "Go to password configuration..."
+msgstr ""
+
+#: luci-app-nacre-config/root/usr/share/rpcd/acl.d/luci-app-nacre-config.json:3
+msgid "Grant access to nacre theme settings"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:161
+msgid "Image"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/sysauth.ut:41
+msgid "Invalid username and/or password! Please try again."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:165
+msgid "JPEG or PNG, any size: it is scaled to at most %d px on the long side."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:105
+msgid "JavaScript required!"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:200
+msgid "Lavender"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:193
+msgid "Light"
+msgstr ""
+
+#: luci-theme-nacre/htdocs/luci-static/resources/nacre-statusline.js:79
+msgid "Load"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/sysauth.ut:50
+msgid "Log in"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:148
+msgid "Login background"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:211
+msgid "Login card blur"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:216
+msgid "Login card opacity"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/footer.ut:14
+msgid "Lua compatibility mode active"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:59
+msgid "Main menu"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:96
+msgid ""
+"No changes to settings will be stored and are lost after rebooting. This "
+"mode should only be used to install a firmware upgrade"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:85
+msgid "No password set!"
+msgstr ""
+
+#: luci-theme-nacre/htdocs/luci-static/resources/nacre-statusline.js:69
+msgid "Not connected"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:33
+msgid "Not enough free space on the router."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:32
+msgid "Only JPEG and PNG images are accepted."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:216
+msgid "Opacity of the login card, in percent (40–100)."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:151
+msgid ""
+"Original photos may carry location (GPS) metadata. The image is re-encoded "
+"to JPEG in your browser before upload, which removes it."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/sysauth.ut:48
+msgid "Password"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:179
+msgid "Remove"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:204
+msgid "Rose"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:201
+msgid "Sage"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:199
+msgid "Sky"
+msgstr ""
+
+#: luci-theme-nacre/htdocs/luci-static/resources/nacre-statusline.js:36
+msgid "Status line"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:95
+msgid "System running in recovery (initramfs) mode."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:202
+msgid "Teal"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:203
+msgid "Terracotta"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:150
+msgid ""
+"The background image is public: anyone on your LAN can load it without "
+"logging in, and so can anyone on the internet if LuCI is reachable from "
+"there. Do not upload private photos."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:61
+msgid "The browser could not encode the image."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:65
+msgid "The browser could not read this image."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:31
+msgid "The image is larger than 5 MiB."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:36
+msgid "The router could not apply the background."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:29
+msgid "The upload did not arrive."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:30
+msgid "The uploaded file is not a regular file."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:86
+msgid ""
+"There is no password set on this router. Please configure a root password to "
+"protect the web interface."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:75
+msgid "Toggle menu"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:172
+msgid "Upload"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:82
+msgid "Upload request failed: %s"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:198
+msgid ""
+"Used for the active menu item, primary buttons and the login page host name. "
+"Hex, like #A1B5D8."
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/sysauth.ut:46
+msgid "Username"
+msgstr ""
+
+#: luci-theme-nacre/htdocs/luci-static/resources/nacre-statusline.js:68
+msgid "WAN"
+msgstr ""
+
+#: luci-theme-nacre/ucode/template/themes/nacre/header.ut:106
+msgid ""
+"You must enable JavaScript in your browser or LuCI will not work properly."
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:187
+#: luci-app-nacre-config/root/usr/share/luci/menu.d/luci-app-nacre-config.json:3
+msgid "nacre"
+msgstr ""
+
+#: luci-app-nacre-config/htdocs/luci-static/resources/view/nacre/config.js:122
+msgid "unknown error"
+msgstr ""

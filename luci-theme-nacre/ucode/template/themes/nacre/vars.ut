@@ -1,0 +1,56 @@
+{#
+ nacre appearance settings as CSS custom properties. Included in <head> by
+ header.ut, so the login page (sysauth.ut) gets them too.
+ Anyone who can write uci nacre controls these strings, and this block is
+ served to unauthenticated clients: only values rebuilt from a validated
+ parse are printed, never the raw uci string.
+ Copyright 2026 Nanako0129. Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	import { cursor } from 'uci';
+	import { stat } from 'fs';
+
+	const conf = cursor().get_all('nacre', 'global') ?? {};
+
+	function int_in(v, lo, hi, dflt) {
+		const n = (type(v) == 'string') ? +v : null;
+
+		return (type(n) == 'int' && n >= lo && n <= hi) ? n : dflt;
+	}
+
+	let accent = '#A1B5D8';
+
+	if (type(conf.accent) == 'string' && length(conf.accent) == 7) {
+		const m = match(conf.accent, /^#[0-9a-fA-F]{6}$/);
+
+		if (m)
+			accent = m[0];
+	}
+
+	const blur = int_in(conf.blur, 0, 30, 14);
+	const alpha = int_in(conf.alpha, 40, 100, 80);
+
+	const exts = [ 'jpg', 'png' ];
+	const i = index(exts, conf.background);
+	let bg_ext = null, bg_mtime = null;
+
+	if (i >= 0) {
+		const st = stat(`/www/luci-static/nacre/background/bg.${exts[i]}`);
+
+		if (st?.type == 'file' && type(st.mtime) == 'int') {
+			bg_ext = exts[i];
+			bg_mtime = st.mtime;
+		}
+	}
+-%}
+<style>
+:root {
+	--nacre-accent: {{ accent }};
+	--nacre-login-blur: {{ blur }}px;
+	--nacre-login-alpha: {{ alpha }}%;
+	{% if (bg_ext): %}
+	--nacre-login-bg: url("{{ media }}/background/bg.{{ bg_ext }}?v={{ bg_mtime }}");
+	{% endif %}
+}
+</style>

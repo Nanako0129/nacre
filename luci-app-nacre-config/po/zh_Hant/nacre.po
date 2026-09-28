@@ -1,0 +1,157 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: nacre\n"
+"Language: zh_Hant\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Accent color"
+msgstr "強調色"
+
+msgid "Appearance settings for the nacre theme."
+msgstr "nacre 主題的外觀設定。"
+
+msgid "Background blur behind the login card, in pixels (0–30)."
+msgstr "登入卡片後方背景的模糊程度，單位為像素（0–30）。"
+
+msgid "Background rejected: %s (%s)"
+msgstr "背景遭拒：%s（%s）"
+
+msgid "Background removed."
+msgstr "已移除背景。"
+
+msgid "Background updated. It shows on the login page."
+msgstr "背景已更新，會顯示在登入頁。"
+
+msgid "Choose an image first."
+msgstr "請先選擇圖片。"
+
+msgid "Color mode"
+msgstr "色彩模式"
+
+msgid "Conn"
+msgstr "連線"
+
+msgid "Could not save the setting."
+msgstr "無法儲存設定。"
+
+msgid "Could not write the background file."
+msgstr "無法寫入背景檔案。"
+
+msgid "Current background"
+msgstr "目前的背景"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "Expecting a hex color like #A1B5D8"
+msgstr "請輸入十六進位色碼，例如 #A1B5D8"
+
+msgid "Follow system"
+msgstr "跟隨系統"
+
+msgid "Grant access to nacre theme settings"
+msgstr "允許存取 nacre 主題設定"
+
+msgid "Image"
+msgstr "圖片"
+
+msgid "JPEG or PNG, any size: it is scaled to at most %d px on the long side."
+msgstr "JPEG 或 PNG，不限尺寸：長邊會縮小到最多 %d 像素。"
+
+msgid "Lavender"
+msgstr "薰衣草紫"
+
+msgid "Light"
+msgstr "淺色"
+
+msgid "Load"
+msgstr "負載"
+
+msgid "Login background"
+msgstr "登入頁背景"
+
+msgid "Login card blur"
+msgstr "登入卡片模糊"
+
+msgid "Login card opacity"
+msgstr "登入卡片不透明度"
+
+msgid "Main menu"
+msgstr "主選單"
+
+msgid "Not connected"
+msgstr "未連線"
+
+msgid "Not enough free space on the router."
+msgstr "路由器的剩餘空間不足。"
+
+msgid "Only JPEG and PNG images are accepted."
+msgstr "只接受 JPEG 和 PNG 圖片。"
+
+msgid "Opacity of the login card, in percent (40–100)."
+msgstr "登入卡片的不透明度，單位為百分比（40–100）。"
+
+msgid "Original photos may carry location (GPS) metadata. The image is re-encoded to JPEG in your browser before upload, which removes it."
+msgstr "原始照片可能含有位置（GPS）資訊。圖片上傳前會先在瀏覽器裡重新編碼成 JPEG，藉此移除這些資訊。"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "Rose"
+msgstr "玫瑰粉"
+
+msgid "Sage"
+msgstr "鼠尾草綠"
+
+msgid "Sky"
+msgstr "天空藍"
+
+msgid "Status line"
+msgstr "狀態列"
+
+msgid "Teal"
+msgstr "青綠"
+
+msgid "Terracotta"
+msgstr "赤陶橘"
+
+msgid "The background image is public: anyone on your LAN can load it without logging in, and so can anyone on the internet if LuCI is reachable from there. Do not upload private photos."
+msgstr "背景圖是公開的：區網內任何人不用登入就能讀取；如果 LuCI 可以從網際網路連到，網路上的任何人也讀得到。請勿上傳私人照片。"
+
+msgid "The browser could not encode the image."
+msgstr "瀏覽器無法編碼這張圖片。"
+
+msgid "The browser could not read this image."
+msgstr "瀏覽器無法讀取這張圖片。"
+
+msgid "The image is larger than 5 MiB."
+msgstr "圖片超過 5 MiB。"
+
+msgid "The router could not apply the background."
+msgstr "路由器無法套用背景。"
+
+msgid "The upload did not arrive."
+msgstr "路由器沒有收到上傳的檔案。"
+
+msgid "The uploaded file is not a regular file."
+msgstr "上傳的不是一般檔案。"
+
+msgid "Toggle menu"
+msgstr "切換選單"
+
+msgid "Upload"
+msgstr "上傳"
+
+msgid "Upload request failed: %s"
+msgstr "上傳請求失敗：%s"
+
+msgid "Used for the active menu item, primary buttons and the login page host name. Hex, like #A1B5D8."
+msgstr "用於目前所在的選單項目、主要按鈕和登入頁的主機名稱。以十六進位表示，例如 #A1B5D8。"
+
+msgid "unknown error"
+msgstr "未知錯誤"
+msgid "WAN"
+msgstr "WAN"

@@ -39,6 +39,7 @@
 	--nacre-sandstone: #F8E6D2;
 	--nacre-teal: #9EC3C0;
 	--nacre-rose: #DCC0D2;
+	--nacre-accent: var(--nacre-sky); /* user-set in uci nacre, see vars.ut */
 	--nacre-ink: #2A3142;        /* text on pastels, in both modes */
 	--nacre-slate: #2F3644;      /* dark data segments */
 	--nacre-slate-2: #2A303C;
@@ -51,7 +52,7 @@
 	--nacre-page: #F6F2EC;
 	--nacre-side: #FBFAF7;
 	--nacre-line: #E6DFD6;
-	--nacre-nav-active: #CCD9EC;
+	--nacre-nav-active: color-mix(in srgb, var(--nacre-accent) 50%, #FFFFFF); /* sky → ≈ sky-mist */
 	--nacre-link: #4F6490;       /* 5.6:1 on white; the pastel sky is too light for text */
 	--nacre-muted: #5E6A84;      /* secondary text: 5.4:1 on the page; bootstrap's text-low is too faint here */
 
@@ -93,7 +94,7 @@
 	--nacre-page: #1E232C;
 	--nacre-side: #252A34;
 	--nacre-line: #394152;
-	--nacre-nav-active: #A1B5D8;
+	--nacre-nav-active: var(--nacre-accent);
 	--nacre-link: #A1B5D8;
 	--nacre-muted: #A3B0C8;
 
@@ -381,8 +382,8 @@ body.nacre-app {
 .cbi-page-actions .cbi-button-apply,
 .cbi-section-actions .cbi-button-edit {
 	--on-color: var(--nacre-ink);
-	background: var(--nacre-sky);
-	border-color: var(--nacre-sky);
+	background: var(--nacre-accent);
+	border-color: var(--nacre-accent);
 }
 .cbi-button-positive.important,
 .cbi-page-actions .cbi-button-save {
@@ -459,8 +460,8 @@ input:focus, button:hover, textarea:focus, select:focus {
 input[type="checkbox"], input[type="radio"] { --bd-color: var(--nacre-muted); }
 
 .cbi-button-edit {
-	background: var(--nacre-sky);
-	border-color: var(--nacre-sky);
+	background: var(--nacre-accent);
+	border-color: var(--nacre-accent);
 	color: var(--nacre-ink);
 }
 
@@ -491,6 +492,16 @@ body.nacre-blank { display: block; }
 	background: var(--nacre-page);
 }
 
+/* An uploaded background (vars.ut) is a cover layer above the strata SVG and
+ * below the card; without one the layer is transparent and the strata show. */
+#nacre-login::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: var(--nacre-login-bg, none) center / cover no-repeat;
+}
+
 .nacre-strata {
 	position: absolute;
 	inset: 0;
@@ -507,6 +518,7 @@ body.nacre-blank { display: block; }
 
 .nacre-login-card {
 	position: relative;
+	z-index: 2;
 	width: min(400px, 100%);
 	box-sizing: border-box;
 	padding: 36px 36px 32px;
@@ -541,7 +553,7 @@ body.nacre-blank { display: block; }
 	font-weight: 500;
 	color: var(--nacre-ink);
 }
-.nacre-pill.sky { background: var(--nacre-sky); }
+.nacre-pill.sky { background: var(--nacre-accent); }
 .nacre-pill.sage { background: var(--nacre-sage); }
 
 .nacre-login-card h1 {

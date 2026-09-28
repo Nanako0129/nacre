@@ -38,6 +38,7 @@
 		<link rel="stylesheet" href="{{ media }}/cascade.css">
 		<link rel="stylesheet" media="only screen and (max-device-width: 854px)" href="{{ media }}/mobile.css" />
 		<link rel="stylesheet" href="{{ media }}/nacre.css">
+		{% include('themes/nacre/vars') %}
 		<link rel="icon" href="{{ media }}/logo_48.png" sizes="48x48">
 		<link rel="icon" href="{{ media }}/logo.svg" sizes="any">
 		<link rel="apple-touch-icon" href="{{ media }}/apple-touch-icon.png">
