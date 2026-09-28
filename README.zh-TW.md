@@ -31,15 +31,44 @@ nacre 建立在上游 bootstrap 主題的變數系統之上，所以 LuCI 的每
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)"
 ```
 
-腳本會下載最新的 release，安裝 `luci-theme-nacre` 和 `luci-app-nacre-config`，切換成 nacre 前會先問你。加上 `-y` 就會直接切換：
+腳本會加入 nacre 的簽章套件源：把公鑰放到 `/etc/apk/keys/nacre.pem`，把套件源加進 `customfeeds.list`。接著用套件名稱安裝 `luci-theme-nacre` 和 `luci-app-nacre-config`，切換成 nacre 前會先問你。加上 `-y` 就會直接切換：
 
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)" -- -y
 ```
 
-安裝本身不會自動切換主題。之後也可以在「系統 → 系統 → 語言與樣式」選擇 **nacre**。
+安裝本身不會自動切換主題。之後也可以到「系統 → 系統 → 語言與樣式」選擇 **nacre**。
 
-> 套件沒有 OpenWrt 官方金鑰的簽章，所以要用 `apk add --allow-untrusted` 安裝。執行前請先讀過 `install.sh`。
+### 從 LuCI 的「軟體套件」頁安裝
+
+只要公鑰放上路由器，剩下的步驟都可以在網頁上點選完成。放公鑰是 LuCI 唯一做不到的一步，因為「設定 apk」只能編輯套件源清單，不能新增金鑰：
+
+```sh
+wget -O /tmp/nacre.pem https://nanako0129.github.io/nacre/nacre.pem
+grep -q 'BEGIN PUBLIC KEY' /tmp/nacre.pem && mv /tmp/nacre.pem /etc/apk/keys/nacre.pem
+```
+
+接著到 LuCI 的「系統 → 軟體套件 → 設定 apk」，在 `customfeeds.list` 加上這一行：
+
+```
+https://nanako0129.github.io/nacre/25.12/packages.adb
+```
+
+按「更新清單…」，搜尋 `nacre`，安裝 `luci-theme-nacre`。之後有新版本時，會出現在「更新」分頁。
+
+### 信任
+
+套件源的索引是用 nacre 自己的金鑰簽章的，金鑰的 sha256 指紋如下：
+
+```
+44fca33ef041692aa55bc2acbdae1c32c2889c75800d87bae7668f3d63c5f2db  nacre.pem
+```
+
+可以用 `sha256sum /etc/apk/keys/nacre.pem` 核對。apk 會對 `/etc/apk/keys` 裡的每一把金鑰、在每一個套件源上都給予信任，所以這把金鑰能簽的不只是 nacre 的套件，而是任何套件名稱。這和你信任 nacre 自己的更新是同一個層級，因為那些更新本來就以 root 身分執行。
+
+如果你手動移除 nacre，也請刪掉 `/etc/apk/keys/nacre.pem` 和那一行套件源；`install.sh uninstall` 會自動處理這兩項。重新執行 `install.sh` 會覆寫金鑰，金鑰輪替後，新金鑰就是這樣換到你的路由器上的。
+
+GitHub Release 附件裡的是同一批套件，但單獨下載的 `.apk` 本身沒有簽章，用「上傳套件…」安裝會出現 `UNTRUSTED signature`。請使用套件源安裝。
 
 ## 設定
 
@@ -53,7 +82,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/inst
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)" -- uninstall
 ```
 
-會把 LuCI 切回 bootstrap，並移除兩個套件、已上傳的背景和設定。
+會把 LuCI 切回 bootstrap，並移除套件、已上傳的背景、設定，以及 nacre 的金鑰和那一行套件源。
 
 ## 名字的由來
 

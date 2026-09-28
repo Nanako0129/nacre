@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nacre package feed</title>
+<style>
+body { margin: 0; padding: 40px 20px; font: 16px/1.6 system-ui, sans-serif; background: #F6F2EC; color: #2A3142; }
+main { max-width: 720px; margin: 0 auto; }
+code, pre { font-family: ui-monospace, Menlo, monospace; font-size: 14px; }
+pre { background: #2A303C; color: #E4E9F2; padding: 14px 16px; border-radius: 12px; overflow-x: auto; }
+a { color: #4F6490; }
+</style>
+</head>
+<body>
+<main>
+<h1>nacre package feed</h1>
+<p>A signed apk feed for the <a href="https://github.com/Nanako0129/nacre">nacre</a> LuCI theme, OpenWrt 25.12.</p>
+<h2>Add it (once)</h2>
+<pre>wget -O /tmp/nacre.pem https://nanako0129.github.io/nacre/nacre.pem
+grep -q 'BEGIN PUBLIC KEY' /tmp/nacre.pem &amp;&amp; mv /tmp/nacre.pem /etc/apk/keys/nacre.pem
+echo https://nanako0129.github.io/nacre/25.12/packages.adb &gt;&gt; /etc/apk/repositories.d/customfeeds.list</pre>
+<p>Then in LuCI: <em>System → Software → Update lists…</em>, search <code>nacre</code>, install <code>luci-theme-nacre</code>. Updates appear in the <em>Updates</em> tab.</p>
+<p>Or run the installer, which does all of the above:</p>
+<pre>sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)"</pre>
+<p>Key fingerprint (sha256 of <code>nacre.pem</code>) is listed in the README and each release.</p>
+</main>
+</body>
+</html>

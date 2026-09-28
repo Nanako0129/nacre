@@ -5,12 +5,19 @@
 #   sh install.sh [-y] [--from <dir>]        install (ask before switching theme)
 #   sh install.sh uninstall                   switch back to bootstrap and remove
 #
+# Installs from nacre's signed apk feed: adds its public key to /etc/apk/keys and
+# the feed to customfeeds.list, then `apk add` by name — after that, updates
+# show up in LuCI's Software page. Re-running replaces the key (key rotation).
+#
 # -y           switch LuCI to nacre without asking
-# --from DIR   install the .apk files in DIR instead of the latest GitHub release
+# --from DIR   development: install the unsigned .apk files in DIR instead
 set -eu
 
-REPO="Nanako0129/nacre"
 PKGS="luci-theme-nacre luci-app-nacre-config"
+SITE="https://nanako0129.github.io/nacre"
+FEED="$SITE/25.12/packages.adb"
+KEY=/etc/apk/keys/nacre.pem
+FEEDS=/etc/apk/repositories.d/customfeeds.list
 # installed packages that belong to nacre, including translations (luci-i18n-nacre-*)
 installed() { apk info 2>/dev/null | grep -E '^(luci-theme-nacre|luci-app-nacre-config|luci-i18n-nacre-.+)$' || true; }
 YES=0
@@ -51,6 +58,12 @@ if [ "$ACTION" = uninstall ]; then
 	[ -z "$pkgs" ] || apk del $pkgs || die "apk del failed; nothing else was removed"
 	rm -rf /www/luci-static/nacre /lib/upgrade/keep.d/luci-app-nacre-config
 	rm -f /etc/config/nacre /etc/config/nacre.apk-new /tmp/.uci/nacre
+	# Stop trusting nacre's key and drop exactly our feed line, nothing else.
+	rm -f "$KEY"
+	if [ -f "$FEEDS" ] && grep -qxF "$FEED" "$FEEDS"; then
+		grep -vxF "$FEED" "$FEEDS" > "$FEEDS.nacre-tmp" || true
+		mv "$FEEDS.nacre-tmp" "$FEEDS"
+	fi
 	/etc/init.d/rpcd restart
 	say "removed; LuCI theme is $(uci -q get luci.main.mediaurlbase)"
 	exit 0
@@ -71,19 +84,23 @@ if [ -n "$FROM" ]; then
 	done
 	cp "$FROM"/luci-theme-nacre-[0-9]*.apk "$FROM"/luci-app-nacre-config-[0-9]*.apk "$TMP/"
 	cp "$FROM"/luci-i18n-nacre-*.apk "$TMP/" 2>/dev/null || true
+	say "installing (development, unsigned) $(cd "$TMP" && ls *.apk | tr '\n' ' ')"
+	apk add --allow-untrusted "$TMP"/*.apk
 else
-	api="https://api.github.com/repos/$REPO/releases/latest"
-	fetch "$api" "$TMP/release.json" || die "cannot reach GitHub ($api)"
-	urls="$(jsonfilter -i "$TMP/release.json" -e '@.assets[*].browser_download_url' | grep '\.apk$')" \
-		|| die "no .apk assets in the latest release"
-	for url in $urls; do
-		fetch "$url" "$TMP/$(basename "$url")" || die "download failed: $url"
-	done
+	# Trust nacre's key: download aside, check it is a public key, then move it
+	# into place, so a failed download never leaves a broken file in keys/.
+	fetch "$SITE/nacre.pem" "$TMP/nacre.pem" || die "cannot download $SITE/nacre.pem"
+	grep -q 'BEGIN PUBLIC KEY' "$TMP/nacre.pem" || die "$SITE/nacre.pem is not a public key"
+	mv "$TMP/nacre.pem" "$KEY"
+	grep -qxF "$FEED" "$FEEDS" 2>/dev/null || echo "$FEED" >> "$FEEDS"
+	say "trusting $KEY (sha256 $(sha256sum "$KEY" | cut -d' ' -f1)) for $FEED"
+	apk update >/dev/null 2>&1 || true
+	apk search luci-theme-nacre 2>/dev/null | grep -q '^luci-theme-nacre-' \
+		|| die "luci-theme-nacre not found in $FEED (apk update failed?)"
+	i18n="$(apk search luci-i18n-nacre 2>/dev/null | sed 's/-[0-9].*//' | sort -u | tr '\n' ' ')"
+	say "installing $PKGS $i18n"
+	apk add $PKGS $i18n
 fi
-
-say "installing $(cd "$TMP" && ls *.apk | tr '\n' ' ')"
-# The packages are not signed by an OpenWrt key; --allow-untrusted is required.
-apk add --allow-untrusted "$TMP"/*.apk
 
 current="$(uci -q get luci.main.mediaurlbase || echo '?')"
 if [ "$current" = /luci-static/nacre ]; then

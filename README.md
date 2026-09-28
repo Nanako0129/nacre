@@ -31,7 +31,7 @@ On the router, as root:
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)"
 ```
 
-The script downloads the latest release, installs `luci-theme-nacre` and `luci-app-nacre-config`, and asks before switching LuCI to nacre. Add `-y` to switch without asking:
+The script adds nacre's signed package feed (its public key to `/etc/apk/keys/nacre.pem`, the feed to `customfeeds.list`), installs `luci-theme-nacre` and `luci-app-nacre-config` by name, and asks before switching LuCI to nacre. Add `-y` to switch without asking:
 
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)" -- -y
@@ -39,7 +39,34 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/inst
 
 Installing never switches the theme on its own; you can also pick **nacre** later under *System → System → Language and Style*.
 
-> The packages are not signed with an OpenWrt key, so they are installed with `apk add --allow-untrusted`. Read `install.sh` before running it.
+### From LuCI's Software page
+
+Once the key is on the router, everything else is point-and-click. The key is the one step LuCI can't do (its *Configure apk* dialog edits feed lists, not keys):
+
+```sh
+wget -O /tmp/nacre.pem https://nanako0129.github.io/nacre/nacre.pem
+grep -q 'BEGIN PUBLIC KEY' /tmp/nacre.pem && mv /tmp/nacre.pem /etc/apk/keys/nacre.pem
+```
+
+Then in LuCI, *System → Software → Configure apk*, add this line to `customfeeds.list`:
+
+```
+https://nanako0129.github.io/nacre/25.12/packages.adb
+```
+
+*Update lists…*, search `nacre`, install `luci-theme-nacre`. New versions appear under *Updates*.
+
+### Trust
+
+The feed index is signed with nacre's own key. Its sha256 fingerprint:
+
+```
+44fca33ef041692aa55bc2acbdae1c32c2889c75800d87bae7668f3d63c5f2db  nacre.pem
+```
+
+Check it with `sha256sum /etc/apk/keys/nacre.pem`. apk trusts every key in `/etc/apk/keys` for every feed, so this key could sign any package name, not just nacre's — the same trust you give nacre's own updates, which run as root. If you remove nacre by hand, also delete `/etc/apk/keys/nacre.pem` and the feed line; `install.sh uninstall` does both. Re-running `install.sh` replaces the key, which is how a rotated key reaches your router.
+
+Files attached to a GitHub release are the same packages, but a downloaded `.apk` is not signed on its own: installing one through *Upload Package…* fails with `UNTRUSTED signature`. Use the feed.
 
 ## Settings
 
@@ -53,7 +80,7 @@ The login background is served from `/www`, so **anyone on your LAN can see it w
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nanako0129/nacre/main/install.sh)" -- uninstall
 ```
 
-This switches LuCI back to bootstrap and removes both packages, the uploaded background and the settings.
+This switches LuCI back to bootstrap and removes the packages, the uploaded background, the settings, nacre's key and its feed line.
 
 ## The name
 

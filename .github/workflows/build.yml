@@ -10,7 +10,10 @@ permissions:
   contents: read
 
 jobs:
+  # Unsigned build for main and pull requests. Tags go through `release` below,
+  # which is the only job that can see the signing key.
   build:
+    if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -18,7 +21,6 @@ jobs:
           fetch-depth: 0
 
       # Packages are noarch; one x86_64 SDK build serves every target.
-      # Pinned to the release the theme is developed against.
       - name: Build with the OpenWrt 25.12.5 SDK
         uses: openwrt/gh-action-sdk@v11
         env:
@@ -41,23 +43,74 @@ jobs:
           path: dist/*.apk
           if-no-files-found: error
 
+  # Signed feed for v* tags. APK_SIGNING_KEY is an environment secret of
+  # `release`, which only v* tags may deploy to (enforced by GitHub, not by
+  # this file), so no branch or pull request can read it.
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
         with:
-          name: nacre-apks
-          path: dist
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Publish the release
+      # Pinned: this step holds the signing key. v11 = 7fc2640 (entrypoint:
+      # set -ef, key written to the SDK root, only bin/ and logs/ exported).
+      - name: Build and sign the feed with the OpenWrt 25.12.5 SDK
+        uses: openwrt/gh-action-sdk@7fc2640243284ecc44f4a9c3f749a61746ee02cb
+        env:
+          ARCH: x86_64-25.12.5
+          FEEDNAME: nacre
+          PACKAGES: luci-theme-nacre luci-app-nacre-config
+          NO_REFRESH_CHECK: 1
+          NO_SHFMT_CHECK: 1
+          INDEX: 1
+          PRIVATE_KEY: ${{ secrets.APK_SIGNING_KEY }}
+
+      # Whitelist the site: never publish bin/, logs/ or the workspace.
+      - name: Assemble the feed site
+        run: |
+          feed=$(dirname "$(find bin/packages -path '*/nacre/packages.adb' | head -1)")
+          test -f "$feed/packages.adb"
+          # The key can sign any package name; publish nothing but nacre.
+          test -z "$(find "$feed" -name '*.apk' ! -name 'luci-*nacre*.apk')"
+          mkdir -p site/25.12
+          cp "$feed"/packages.adb "$feed"/luci-*nacre*.apk site/25.12/
+          cp nacre.pem site/nacre.pem
+          cp .github/pages/index.html site/index.html
+          ! grep -rl 'PRIVATE KEY' site/
+          ls -la site site/25.12
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*.apk \
+          gh release create "$GITHUB_REF_NAME" site/25.12/*.apk site/nacre.pem \
             --repo "$GITHUB_REPOSITORY" \
             --title "nacre ${GITHUB_REF_NAME#v}" \
             --generate-notes
+
+  deploy:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # An older run must never overwrite a newer feed.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
